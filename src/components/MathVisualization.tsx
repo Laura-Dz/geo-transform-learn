@@ -101,26 +101,29 @@ const FunctionSurface: React.FC<{
 };
 
 const CoordinateSystem: React.FC = () => {
-  // Create line geometries properly
-  const xAxisGeometry = useMemo(() => {
+  // Create line objects properly
+  const xAxisLine = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
     const points = new Float32Array([-10, 0, 0, 10, 0, 0]);
     geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
-    return geometry;
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    return new THREE.Line(geometry, material);
   }, []);
 
-  const yAxisGeometry = useMemo(() => {
+  const yAxisLine = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
     const points = new Float32Array([0, -10, 0, 0, 10, 0]);
     geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
-    return geometry;
+    const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+    return new THREE.Line(geometry, material);
   }, []);
 
-  const zAxisGeometry = useMemo(() => {
+  const zAxisLine = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
     const points = new Float32Array([0, 0, -10, 0, 0, 10]);
     geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
-    return geometry;
+    const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+    return new THREE.Line(geometry, material);
   }, []);
 
   return (
@@ -140,20 +143,10 @@ const CoordinateSystem: React.FC = () => {
         infiniteGrid={false}
       />
       
-      {/* X Axis */}
-      <line geometry={xAxisGeometry}>
-        <lineBasicMaterial color="#ff0000" />
-      </line>
-      
-      {/* Y Axis */}
-      <line geometry={yAxisGeometry}>
-        <lineBasicMaterial color="#00ff00" />
-      </line>
-      
-      {/* Z Axis */}
-      <line geometry={zAxisGeometry}>
-        <lineBasicMaterial color="#0000ff" />
-      </line>
+      {/* Axis Lines */}
+      <primitive object={xAxisLine} />
+      <primitive object={yAxisLine} />
+      <primitive object={zAxisLine} />
       
       {/* Axis labels */}
       <Text
