@@ -8,8 +8,22 @@ import { CheckCircle, XCircle, Lightbulb, RotateCcw } from 'lucide-react';
 import MathVisualization from '@/components/MathVisualization';
 import { SmartHintsSystem } from '@/components/features/SmartHintsSystem';
 
+interface TransformationValue {
+  x: number | boolean;
+  y: number | boolean;
+  z: number | boolean;
+}
+
+interface Problem {
+  baseFunction: string;
+  instruction: string;
+  expectedAnswer: string;
+  transformationType: string;
+  transformationValue: TransformationValue;
+}
+
 const PracticeModePage = () => {
-  const [currentProblem, setCurrentProblem] = useState({
+  const [currentProblem, setCurrentProblem] = useState<Problem>({
     baseFunction: 'x^2 + y^2',
     instruction: 'Apply a vertical translation of +2 units',
     expectedAnswer: 'x^2 + y^2 + 2',
@@ -19,7 +33,7 @@ const PracticeModePage = () => {
 
   const [userAnswer, setUserAnswer] = useState('');
   const [attempts, setAttempts] = useState(0);
-  const [isCorrect, setIsCorrect] = useState(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [userTransformations, setUserTransformations] = useState({
     translation: { x: 0, y: 0, z: 0 },
@@ -27,7 +41,7 @@ const PracticeModePage = () => {
     reflection: { x: false, y: false, z: false }
   });
 
-  const problems = [
+  const problems: Problem[] = [
     {
       baseFunction: 'x^2 + y^2',
       instruction: 'Apply a vertical translation of +2 units',
