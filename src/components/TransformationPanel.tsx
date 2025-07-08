@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Move, Scale, Flip } from 'lucide-react';
+import { RotateCcw, Move, Scale, FlipHorizontal } from 'lucide-react';
 
 interface TransformationPanelProps {
   transformations: {
@@ -157,7 +156,7 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
         {/* Reflection */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <Flip className="h-4 w-4 text-purple-400" />
+            <FlipHorizontal className="h-4 w-4 text-purple-400" />
             <Label className="text-white font-medium">Reflection</Label>
           </div>
           
