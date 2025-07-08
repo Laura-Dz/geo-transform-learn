@@ -101,6 +101,28 @@ const FunctionSurface: React.FC<{
 };
 
 const CoordinateSystem: React.FC = () => {
+  // Create line geometries properly
+  const xAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const points = new Float32Array([-10, 0, 0, 10, 0, 0]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+    return geometry;
+  }, []);
+
+  const yAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const points = new Float32Array([0, -10, 0, 0, 10, 0]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+    return geometry;
+  }, []);
+
+  const zAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const points = new Float32Array([0, 0, -10, 0, 0, 10]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+    return geometry;
+  }, []);
+
   return (
     <group>
       {/* Grid */}
@@ -118,40 +140,18 @@ const CoordinateSystem: React.FC = () => {
         infiniteGrid={false}
       />
       
-      {/* Axes */}
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={2}
-            array={new Float32Array([-10, 0, 0, 10, 0, 0])}
-            itemSize={3}
-          />
-        </bufferGeometry>
+      {/* X Axis */}
+      <line geometry={xAxisGeometry}>
         <lineBasicMaterial color="#ff0000" />
       </line>
       
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, -10, 0, 0, 10, 0])}
-            itemSize={3}
-          />
-        </bufferGeometry>
+      {/* Y Axis */}
+      <line geometry={yAxisGeometry}>
         <lineBasicMaterial color="#00ff00" />
       </line>
       
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, 0, -10, 0, 0, 10])}
-            itemSize={3}
-          />
-        </bufferGeometry>
+      {/* Z Axis */}
+      <line geometry={zAxisGeometry}>
         <lineBasicMaterial color="#0000ff" />
       </line>
       
