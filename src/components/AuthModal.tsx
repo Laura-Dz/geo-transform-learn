@@ -45,7 +45,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
       
       toast({
         title: "Login Successful!",
-        description: "Welcome to MathViz 3D",
+        description: "Welcome to 3DZert",
       });
     } catch (error) {
       toast({
@@ -88,7 +88,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
       
       toast({
         title: "Registration Successful!",
-        description: "Welcome to MathViz 3D! Your learning journey begins now.",
+        description: "Welcome to 3DZert! Your learning journey begins now.",
       });
     } catch (error) {
       toast({
@@ -106,7 +106,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
       <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center text-white">
-            Welcome to MathViz 3D
+            Welcome to 3DZert
           </DialogTitle>
         </DialogHeader>
 

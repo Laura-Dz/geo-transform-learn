@@ -49,7 +49,7 @@ export function AppSidebar() {
         <div className="flex items-center space-x-2">
           <Calculator className="h-8 w-8 text-cyan-400" />
           {state !== 'collapsed' && (
-            <h2 className="text-xl font-bold text-white">MathViz 3D</h2>
+            <h2 className="text-xl font-bold text-white">3DZert</h2>
           )}
         </div>
       </SidebarHeader>

@@ -55,7 +55,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Calculator className="h-8 w-8 text-cyan-400" />
-            <h1 className="text-2xl font-bold text-white">MathViz 3D</h1>
+            <h1 className="text-2xl font-bold text-white">3DZert</h1>
           </div>
           
           <Button 
@@ -93,7 +93,7 @@ const Index = () => {
               <Button 
                 variant="outline"
                 size="lg"
-                className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4"
+                className="border-white/30 text-black hover:bg-white/10 text-lg px-8 py-4"
               >
                 Watch Demo
               </Button>
@@ -124,7 +124,7 @@ const Index = () => {
         {/* Educational Benefits */}
         <div className="mb-20">
           <h2 className="text-4xl font-bold text-white text-center mb-12">
-            Why Choose MathViz 3D?
+            Why Choose 3DZert?
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
