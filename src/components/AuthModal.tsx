@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { signup, login } from '@/services/authService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock } from 'lucide-react';
@@ -30,24 +31,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login
-      const userData = {
-        id: '1',
-        name: 'Student User',
-        email: loginData.email
-      };
+      // API call
+      const user = await login(loginData.email, loginData.password);
       
       localStorage.setItem('mathVizToken', 'mock-jwt-token');
-      onLogin(userData);
+      onLogin(user);
       
       toast({
         title: "Login Successful!",
         description: "Welcome to 3DZert",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Login Failed",
         description: "Please check your credentials and try again.",
@@ -73,27 +67,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful registration
-      const userData = {
-        id: '1',
-        name: registerData.name,
-        email: registerData.email
-      };
+      // API call
+      const user = await signup(registerData.email, registerData.password, registerData.name);
+
       
       localStorage.setItem('mathVizToken', 'mock-jwt-token');
-      onLogin(userData);
+      onLogin(user);
       
       toast({
         title: "Registration Successful!",
         description: "Welcome to 3DZert! Your learning journey begins now.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Registration Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     } finally {

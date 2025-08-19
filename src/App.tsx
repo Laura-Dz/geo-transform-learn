@@ -12,6 +12,10 @@ import PracticeModePage from "./pages/PracticeModePage";
 import NotFound from "./pages/NotFound";
 import AuthModal from "@/components/AuthModal";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { validateToken as validateUserToken } from "@/services/authService";
+
+
 
 const queryClient = new QueryClient();
 
@@ -19,6 +23,9 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { toast } = useToast();
+
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     // Check for existing authentication
@@ -30,11 +37,15 @@ const App = () => {
 
   const validateToken = async (token: string) => {
     try {
-      // This would typically make an API call to validate the token
-      // For now, we'll simulate a valid user
-      setUser({ id: '1', email: 'student@example.com', name: 'Student' });
+      const userData = await validateUserToken(token);
+      setUser(userData);
+      navigate("/visualizer");
     } catch (error) {
       localStorage.removeItem('mathVizToken');
+      toast({
+        title: "Session expired",
+        description: "Please log in again.",
+      });
     }
   };
 
@@ -45,6 +56,7 @@ const App = () => {
       title: "Welcome back!",
       description: "Ready to explore 3D mathematics?",
     });
+    navigate("/visualizer"); // ← redirect here
   };
 
   const handleLogout = () => {
@@ -54,6 +66,7 @@ const App = () => {
       title: "Logged out",
       description: "See you next time!",
     });
+    navigate('/');
   };
 
   return (
@@ -61,7 +74,28 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+
+        
+  <Routes>
+    {/* Always show landing page at root path */}
+    <Route path="/" element={<Index />} />
+    
+    {/* Protected routes - only accessible when authenticated */}
+    {user ? (
+      <Route path="/app" element={<MainLayout user={user} onLogout={handleLogout} />}>
+        <Route index element={<Navigate to="/app/visualizer" replace />} />
+        <Route path="visualizer" element={<GraphVisualizerPage />} />
+        <Route path="practice" element={<PracticeModePage />} />
+        {/* ... other protected routes ... */}
+      </Route>
+    ) : null}
+    
+    {/* Redirect authenticated users away from landing page */}
+    <Route path="/" element={user ? <Navigate to="/app/visualizer" replace /> : null} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+
+        {/* <BrowserRouter>
           <Routes>
             {user ? (
               <Route path="/" element={<MainLayout user={user} onLogout={handleLogout} />}>
@@ -79,7 +113,7 @@ const App = () => {
             )}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </BrowserRouter> */}
 
         <AuthModal 
           isOpen={showAuthModal}
