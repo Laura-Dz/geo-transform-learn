@@ -26,68 +26,130 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
   });
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  // In handleLogin function:
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      // API call
-      const user = await login(loginData.email, loginData.password);
-      
-      localStorage.setItem('mathVizToken', 'mock-jwt-token');
-      onLogin(user);
-      
-      toast({
-        title: "Login Successful!",
-        description: "Welcome to 3DZert",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  try {
+    const response = await login(loginData.email, loginData.password);
     
-    if (registerData.password !== registerData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are identical.",
-        variant: "destructive",
-      });
-      return;
-    }
+    localStorage.setItem('mathVizToken', response.token);
+    onLogin(response.user);
+    
+    toast({
+      title: "Login Successful!",
+      description: "Welcome to 3DZert",
+    });
+  } catch (error: any) {
+    toast({
+      title: "Login Failed",
+      description: error.message || "Please check your credentials and try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-    setIsLoading(true);
+// In handleRegister function:
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (registerData.password !== registerData.confirmPassword) {
+    toast({
+      title: "Passwords don't match",
+      description: "Please make sure both passwords are identical.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    try {
-      // API call
-      const user = await signup(registerData.email, registerData.password, registerData.name);
+  setIsLoading(true);
+
+  try {
+    const response = await signup(registerData.name, registerData.email, registerData.password);
+    
+    localStorage.setItem('mathVizToken', response.token);
+    onLogin(response.user);
+    
+    toast({
+      title: "Registration Successful!",
+      description: "Welcome to 3DZert! Your learning journey begins now.",
+    });
+  } catch (error: any) {
+    toast({
+      title: "Registration Failed",
+      description: error.message || "Please try again later.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // const handleLogin = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+
+  //   try {
+  //     // API call
+  //     const user = await login(loginData.email, loginData.password);
+      
+  //     localStorage.setItem('mathVizToken', 'mock-jwt-token');
+  //     onLogin(user);
+      
+  //     toast({
+  //       title: "Login Successful!",
+  //       description: "Welcome to 3DZert",
+  //     });
+  //   } catch (error: any) {
+  //     toast({
+  //       title: "Login Failed",
+  //       description: "Please check your credentials and try again.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  // const handleRegister = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+    
+  //   if (registerData.password !== registerData.confirmPassword) {
+  //     toast({
+  //       title: "Passwords don't match",
+  //       description: "Please make sure both passwords are identical.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     // API call
+  //     const user = await signup(registerData.email, registerData.password, registerData.name);
 
       
-      localStorage.setItem('mathVizToken', 'mock-jwt-token');
-      onLogin(user);
+  //     localStorage.setItem('mathVizToken', 'mock-jwt-token');
+  //     onLogin(user);
       
-      toast({
-        title: "Registration Successful!",
-        description: "Welcome to 3DZert! Your learning journey begins now.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     toast({
+  //       title: "Registration Successful!",
+  //       description: "Welcome to 3DZert! Your learning journey begins now.",
+  //     });
+  //   } catch (error: any) {
+  //     toast({
+  //       title: "Registration Failed",
+  //       description: error.message || "Please try again later.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

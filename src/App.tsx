@@ -13,7 +13,6 @@ import NotFound from "./pages/NotFound";
 import AuthModal from "@/components/AuthModal";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { validateToken as validateUserToken } from "@/services/authService";
 
 
 
@@ -26,28 +25,29 @@ const App = () => {
 
   const navigate = useNavigate();
 
+// In App.tsx
+useEffect(() => {
+  // Check for existing authentication
+  const token = localStorage.getItem('mathVizToken');
+  if (token) {
+    validateToken(token);
+  }
+}, []);
 
-  useEffect(() => {
-    // Check for existing authentication
-    const token = localStorage.getItem('mathVizToken');
-    if (token) {
-      validateToken(token);
-    }
-  }, []);
+const validateToken = async (token: string) => {
+  try {
+    const userData = await validateToken(token); // Use the function from authService
+    setUser(userData);
+    navigate("/app/visualizer");
+  } catch (error) {
+    localStorage.removeItem('mathVizToken');
+    toast({
+      title: "Session expired",
+      description: "Please log in again.",
+    });
+  }
+};
 
-  const validateToken = async (token: string) => {
-    try {
-      const userData = await validateUserToken(token);
-      setUser(userData);
-      navigate("/visualizer");
-    } catch (error) {
-      localStorage.removeItem('mathVizToken');
-      toast({
-        title: "Session expired",
-        description: "Please log in again.",
-      });
-    }
-  };
 
   const handleLogin = (userData: any) => {
     setUser(userData);
