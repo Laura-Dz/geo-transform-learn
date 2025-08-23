@@ -1,7 +1,10 @@
 // server/api/index.ts
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import authRoutes from './auth'; // Import the auth router
+
+dotenv.config();
 
 const app = express();
 

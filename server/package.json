@@ -5,6 +5,7 @@
     "@prisma/client": "^6.14.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.14.0"
@@ -20,11 +21,11 @@
   "prisma": {
     "schema": "../prisma/schema.prisma"
   },
-    "scripts": {
-      "dev": "cd .. && npx prisma generate && cd server && ts-node --transpile-only api/index.ts",
-      "build": "cd .. && npx prisma generate && cd server && tsc",
-      "start": "node build/index.js",
-      "prisma:generate": "cd .. && npx prisma generate",
-      "prisma:push": "cd .. && npx prisma db push"
-    }
+  "scripts": {
+    "dev": "cd .. && npx prisma generate && cd server && ts-node --transpile-only api/index.ts",
+    "build": "cd .. && npx prisma generate && cd server && tsc",
+    "start": "node build/index.js",
+    "prisma:generate": "cd .. && npx prisma generate",
+    "prisma:push": "cd .. && npx prisma db push"
+  }
 }
