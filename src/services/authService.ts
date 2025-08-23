@@ -2,7 +2,7 @@
 const API_BASE_URL = 'http://localhost:8080';
 
 export async function signup(name: string, email: string, password: string) {
-  const response = await fetch(`${API_BASE_URL}signup`, {
+  const response = await fetch(`${API_BASE_URL}api/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password }),
@@ -17,7 +17,7 @@ export async function signup(name: string, email: string, password: string) {
 }
 
 export async function login(email: string, password: string) {
-  const response = await fetch(`${API_BASE_URL}login`, {
+  const response = await fetch(`${API_BASE_URL}api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
