@@ -35,11 +35,15 @@ export default async function handler(req: Request, res: Response) {
       { expiresIn: '7d' }
     );
 
-    // Remove password from response
+    // Remove password from response and add default role
     const { password: _, ...userWithoutPassword } = user;
+    const userResponse = {
+      ...userWithoutPassword,
+      role: 'student' // Default role for frontend compatibility
+    };
 
     res.status(200).json({
-      user: userWithoutPassword,
+      user: userResponse,
       token
     });
   } catch (error) {

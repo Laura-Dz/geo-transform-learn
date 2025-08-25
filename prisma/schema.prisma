@@ -1,7 +1,8 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../server/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -9,12 +10,302 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
- 
+// User Management
 model User {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  name      String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
+  name      String
   password  String
+  role      Role     @default(STUDENT)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+
+  // Relationships
+  profile         UserProfile?
+  progress        Progress[]
+  quizAttempts    QuizAttempt[]
+  achievements    UserAchievement[]
+  aiInteractions  AIInteraction[]
+  savedFunctions  SavedFunction[]
+  studySessions   StudySession[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String     @unique @db.ObjectId
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio              String?
+  avatar           String?
+  learningGoals    String?
+  preferredTopics  String[] // Array of topic preferences
+  skillLevel       SkillLevel @default(BEGINNER)
+  studyStreak      Int        @default(0)
+  totalStudyTime   Int        @default(0) // in minutes
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  settings         Json?    // User preferences and settings
+
+  @@map("user_profiles")
+}
+
+// Content Management
+model Concept {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  content     String      // Rich text content
+  difficulty  Difficulty
+  category    Category
+  tags        String[]    // Array of tags
+  prerequisites String[]  // Array of concept IDs
+  estimatedTime Int       // in minutes
+  isPublished Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relationships
+  examples    ConceptExample[]
+  quizzes     Quiz[]
+  progress    Progress[]
+
+  @@map("concepts")
+}
+
+model ConceptExample {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  conceptId String  @db.ObjectId
+  title     String
+  content   String
+  code      String?
+  createdAt DateTime @default(now())
+
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@map("concept_examples")
+}
+
+// Quiz System
+model Quiz {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  conceptId   String?      @db.ObjectId
+  title       String
+  description String?
+  timeLimit   Int?         // in minutes
+  difficulty  Difficulty
+  isPublished Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relationships
+  concept  Concept?      @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  questions QuizQuestion[]
+  attempts QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  quizId        String            @db.ObjectId
+  questionText  String
+  questionType  QuestionType
+  options       Json?             // For multiple choice questions
+  correctAnswer String
+  explanation   String?
+  points        Int               @default(1)
+  order         Int
+  createdAt     DateTime          @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  quizId      String   @db.ObjectId
+  score       Float
+  totalPoints Int
+  timeSpent   Int?     // in seconds
+  answersData Json     // User's answers summary
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@map("quiz_attempts")
+}
+
+model QuizAnswer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  attemptId    String   @db.ObjectId
+  questionId   String   @db.ObjectId
+  userAnswer   String
+  isCorrect    Boolean
+  timeSpent    Int      // in seconds
+  createdAt    DateTime @default(now())
+
+  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_answers")
+}
+
+// Progress Tracking
+model Progress {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  conceptId   String   @db.ObjectId
+  status      ProgressStatus @default(NOT_STARTED)
+  score       Float?   // 0-100
+  timeSpent   Int      @default(0) // in minutes
+  lastAccessed DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conceptId])
+  @@map("progress")
+}
+
+model StudySession {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  duration    Int?     // in minutes
+  activitiesCount Int  @default(0)
+  conceptsStudied String[] // Array of concept IDs
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("study_sessions")
+}
+
+// Achievement System
+model Achievement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String
+  icon        String
+  category    AchievementCategory
+  criteria    Json     // Achievement criteria
+  points      Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  achievementId String   @db.ObjectId
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// AI Assistant
+model AIInteraction {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  query      String
+  response   String
+  context    Json?    // Current learning context
+  helpful    Boolean? // User feedback
+  rating     Int?     // 1-5 rating
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_interactions")
+}
+
+// Function Management
+model SavedFunction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  name        String
+  expression  String
+  description String?
+  parameters  Json?    // 3D visualization parameters
+  category    String?
+  tags        String[] // Array of tags
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_functions")
+}
+
+// Enums
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum Category {
+  ALGEBRA
+  GEOMETRY
+  CALCULUS
+  TRIGONOMETRY
+  STATISTICS
+  LINEAR_ALGEBRA
+  DIFFERENTIAL_EQUATIONS
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  EQUATION_INPUT
+  GRAPH_INTERPRETATION
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  MASTERED
+}
+
+enum AchievementCategory {
+  LEARNING
+  PRACTICE
+  SOCIAL
+  MILESTONE
+  STREAK
 }

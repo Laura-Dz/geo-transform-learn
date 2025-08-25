@@ -10,8 +10,8 @@ import { FunctionParser, FunctionInfo } from '@/lib/functionParser';
 interface TransformationPanelProps {
   transformations: {
     translation: { x: number; y: number; z: number };
-    scaling: { x: number; y: number; z: number };
-    reflection: { x: boolean; y: boolean; z: boolean };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
   };
   onChange: (type: string, values: any) => void;
   functionInfo?: FunctionInfo;
@@ -29,30 +29,31 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
     });
   };
 
-  const handleScalingChange = (axis: 'x' | 'y' | 'z', value: number[]) => {
-    onChange('scaling', {
-      ...transformations.scaling,
+  const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number[]) => {
+    onChange('rotation', {
+      ...transformations.rotation,
       [axis]: value[0]
     });
   };
 
-  const handleReflectionChange = (axis: 'x' | 'y' | 'z', checked: boolean) => {
-    onChange('reflection', {
-      ...transformations.reflection,
-      [axis]: checked
+  const handleScaleChange = (axis: 'x' | 'y' | 'z', value: number[]) => {
+    onChange('scale', {
+      ...transformations.scale,
+      [axis]: value[0]
     });
   };
 
+
   const resetTransformations = () => {
     onChange('translation', { x: 0, y: 0, z: 0 });
-    onChange('scaling', { x: 1, y: 1, z: 1 });
-    onChange('reflection', { x: false, y: false, z: false });
+    onChange('rotation', { x: 0, y: 0, z: 0 });
+    onChange('scale', { x: 1, y: 1, z: 1 });
   };
 
   const getTransformedEquation = () => {
     if (!functionInfo) return 'f(x,y) = x² + y²';
     
-    const { translation, scaling, reflection } = transformations;
+    const { translation, rotation, scale } = transformations;
     const variables = functionInfo.variables;
     
     let equation = `f(${variables.join(',')}) = `;
@@ -68,21 +69,22 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
       transformations_applied.push(`Translated (${nonZeroTranslations.join(', ')})`);
     }
     
+    // Check for rotations
+    const nonZeroRotations = Object.entries(rotation)
+      .filter(([_, value]) => value !== 0)
+      .map(([axis, value]) => `${axis}: ${value}°`);
+    if (nonZeroRotations.length > 0) {
+      transformations_applied.push(`Rotated (${nonZeroRotations.join(', ')})`);
+    }
+    
     // Check for scaling
-    const nonUnityScaling = Object.entries(scaling)
+    const nonUnityScaling = Object.entries(scale)
       .filter(([_, value]) => value !== 1)
       .map(([axis, value]) => `${axis}: ×${value}`);
     if (nonUnityScaling.length > 0) {
       transformations_applied.push(`Scaled (${nonUnityScaling.join(', ')})`);
     }
     
-    // Check for reflections
-    const reflections = Object.entries(reflection)
-      .filter(([_, value]) => value)
-      .map(([axis, _]) => `${axis}-axis`);
-    if (reflections.length > 0) {
-      transformations_applied.push(`Reflected over ${reflections.join(', ')}`);
-    }
     
     if (transformations_applied.length === 0) {
       equation += functionInfo.expression;
@@ -104,7 +106,7 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
           className="border-white/30 text-white hover:bg-white/10"
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          Reset
+          Reset All
         </Button>
       </div>
 
@@ -147,74 +149,60 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
           </div>
         </div>
 
-        {/* Scaling */}
+        {/* Rotation */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Scale className="h-4 w-4 text-yellow-400" />
-            <Label className="text-white font-medium">Scaling</Label>
+          <div className="flex items-center gap-2">
+            <RotateCcw className="h-4 w-4" />
+            <Label className="font-medium">Rotation</Label>
           </div>
           
-          <div className="space-y-3">
-            {(['x', 'y', 'z'] as const).map((axis) => {
-              // Show relevant axes based on function type
-              const isRelevant = !functionInfo || 
-                functionInfo.variables.includes(axis) || 
-                (axis === 'z' && functionInfo.type !== 'single');
-              
-              if (!isRelevant) return null;
-              
-              return (
-                <div key={axis} className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label className="text-sm text-gray-300">{axis.toUpperCase()}-axis</Label>
-                    <span className="text-sm text-white">
-                      {transformations.scaling[axis].toFixed(1)}
-                    </span>
-                  </div>
-                  <Slider
-                    value={[transformations.scaling[axis]]}
-                    onValueChange={(value) => handleScalingChange(axis, value)}
-                    min={0.1}
-                    max={3}
-                    step={0.1}
-                    className="slider-yellow"
-                  />
-                </div>
-              );
-            })}
-          </div>
+          {(['x', 'y', 'z'] as const).map((axis) => (
+            <div key={axis} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{axis.toUpperCase()}-axis</Label>
+                <span className="text-sm text-muted-foreground">
+                  {transformations.rotation[axis].toFixed(0)}°
+                </span>
+              </div>
+              <Slider
+                value={[transformations.rotation[axis]]}
+                onValueChange={(value) => handleRotationChange(axis, value)}
+                min={-180}
+                max={180}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Reflection */}
+        {/* Scale */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <FlipHorizontal className="h-4 w-4 text-purple-400" />
-            <Label className="text-white font-medium">Reflection</Label>
+          <div className="flex items-center gap-2">
+            <Scale className="h-4 w-4" />
+            <Label className="font-medium">Scale</Label>
           </div>
           
-          <div className="space-y-3">
-            {(['x', 'y', 'z'] as const).map((axis) => {
-              // Show relevant axes based on function type
-              const isRelevant = !functionInfo || 
-                functionInfo.variables.includes(axis) || 
-                (axis === 'z' && functionInfo.type !== 'single');
-              
-              if (!isRelevant) return null;
-              
-              return (
-                <div key={axis} className="flex items-center justify-between">
-                  <Label className="text-sm text-gray-300">
-                    Reflect over {axis.toUpperCase()}-axis
-                  </Label>
-                  <Switch
-                    checked={transformations.reflection[axis]}
-                    onCheckedChange={(checked) => handleReflectionChange(axis, checked)}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          {(['x', 'y', 'z'] as const).map((axis) => (
+            <div key={axis} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{axis.toUpperCase()}-axis</Label>
+                <span className="text-sm text-muted-foreground">
+                  {transformations.scale[axis].toFixed(2)}
+                </span>
+              </div>
+              <Slider
+                value={[transformations.scale[axis]]}
+                onValueChange={(value) => handleScaleChange(axis, value)}
+                min={0.1}
+                max={3}
+                step={0.1}
+                className="w-full"
+              />
+            </div>
+          ))}
         </div>
+
 
         {/* Current Equation */}
         <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">

@@ -4,10 +4,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import AppLayout from "./components/layout/AppLayout";
 import Index from "./pages/Index";
-import GraphVisualizerPage from "./pages/GraphVisualizerPage";
-import PracticeModePage from "./pages/PracticeModePage";
+import VisualizerPage from "./pages/VisualizerPage";
+import ConceptsPage from "./pages/ConceptsPage";
+import PracticePage from "./pages/PracticePage";
+import QuizPage from "./pages/QuizPage";
+import ChallengesPage from "./pages/ChallengesPage";
+import LearningHubPage from "./pages/LearningHubPage";
+import ProgressPage from "./pages/ProgressPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import AuthModal from "@/components/AuthModal";
@@ -34,7 +39,7 @@ const AppContent = () => {
       setShowAuthModal(false);
       window.location.href = getRoleBasedRedirectPath();
     } catch (error) {
-      // Error handling is done in the useAuth hook
+      console.error(error);
     }
   };
 
@@ -71,47 +76,27 @@ const AppContent = () => {
         
         {/* Protected routes */}
         {isAuthenticated() ? (
-          <Route path="/app" element={<MainLayout user={user!} onLogout={handleLogout} />}>
+          <Route path="/app" element={<AppLayout />}>
             <Route 
               index 
-              element={<Navigate to={user?.role === 'admin' ? 'admin' : 'visualizer'} replace />} 
+              element={<Navigate to={user?.role === 'admin' ? 'admin' : 'learning-hub'} replace />} 
             />
             
             {/* Admin routes */}
-            {user?.role === 'admin' && (
-              <Route path="admin" element={<AdminDashboard user={user} />} />
-            )}
+            <Route 
+              path="admin" 
+              element={user?.role === 'admin' ? <AdminDashboard user={user} /> : <Navigate to="visualizer" replace />} 
+            />
             
             {/* Student routes (accessible by both students and admins) */}
-            <Route path="visualizer" element={<GraphVisualizerPage />} />
-            <Route path="practice" element={<PracticeModePage />} />
-            
-            {/* Common routes */}
-            <Route path="concepts" element={
-              <div className="text-white text-center py-20">
-                <h2 className="text-2xl">Concept Library - Coming Soon!</h2>
-              </div>
-            } />
-            <Route path="challenges" element={
-              <div className="text-white text-center py-20">
-                <h2 className="text-2xl">Challenges - Coming Soon!</h2>
-              </div>
-            } />
-            <Route path="quiz" element={
-              <div className="text-white text-center py-20">
-                <h2 className="text-2xl">Quiz Zone - Coming Soon!</h2>
-              </div>
-            } />
-            <Route path="progress" element={
-              <div className="text-white text-center py-20">
-                <h2 className="text-2xl">Progress Dashboard - Coming Soon!</h2>
-              </div>
-            } />
-            <Route path="profile" element={
-              <div className="text-white text-center py-20">
-                <h2 className="text-2xl">Profile - Coming Soon!</h2>
-              </div>
-            } />
+            <Route path="visualizer" element={<VisualizerPage />} />
+            <Route path="concepts" element={<ConceptsPage />} />
+            <Route path="practice" element={<PracticePage />} />
+            <Route path="quiz" element={<QuizPage />} />
+            <Route path="challenges" element={<ChallengesPage />} />
+            <Route path="learning-hub" element={<LearningHubPage />} />
+            <Route path="progress" element={<ProgressPage />} />
+            <Route path="profile" element={<ProgressPage />} />
           </Route>
         ) : (
           <Route path="/app/*" element={<Navigate to="/" replace />} />

@@ -8,8 +8,8 @@ import { BookOpen, Lightbulb, ArrowRight } from 'lucide-react';
 interface ConceptExplanationProps {
   transformations: {
     translation: { x: number; y: number; z: number };
-    scaling: { x: number; y: number; z: number };
-    reflection: { x: boolean; y: boolean; z: boolean };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
   };
   detailed?: boolean;
   onConceptExplored: (concept: string) => void;
@@ -63,18 +63,18 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
     const active = [];
     
     // Check for active transformations
-    const { translation, scaling, reflection } = transformations;
+    const { translation, rotation, scale } = transformations;
     
     if (translation.x !== 0 || translation.y !== 0 || translation.z !== 0) {
       active.push('translation');
     }
     
-    if (scaling.x !== 1 || scaling.y !== 1 || scaling.z !== 1) {
-      active.push('scaling');
+    if (rotation.x !== 0 || rotation.y !== 0 || rotation.z !== 0) {
+      active.push('rotation');
     }
     
-    if (reflection.x || reflection.y || reflection.z) {
-      active.push('reflection');
+    if (scale.x !== 1 || scale.y !== 1 || scale.z !== 1) {
+      active.push('scaling');
     }
     
     setActiveTransformations(active);

@@ -7,7 +7,11 @@ import { Play, Pause, RotateCcw, ChevronRight } from 'lucide-react';
 
 interface StepByStepTransformationProps {
   functionExpression: string;
-  transformations: any;
+  transformations: {
+    translation: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
+  };
   onTransformationChange: (type: string, values: any) => void;
 }
 
@@ -24,11 +28,11 @@ export function StepByStepTransformation({
     {
       title: 'Original Function',
       description: 'Starting with the base function',
-      equation: `f(x,y) = ${functionExpression}`,
+      equation: functionExpression,
       transformValues: {
         translation: { x: 0, y: 0, z: 0 },
-        scaling: { x: 1, y: 1, z: 1 },
-        reflection: { x: false, y: false, z: false }
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
       }
     },
     {
@@ -37,24 +41,24 @@ export function StepByStepTransformation({
       equation: `f(x-${transformations.translation.x}, y-${transformations.translation.y}) + ${transformations.translation.z}`,
       transformValues: {
         translation: transformations.translation,
-        scaling: { x: 1, y: 1, z: 1 },
-        reflection: { x: false, y: false, z: false }
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      }
+    },
+    {
+      title: 'Apply Rotation',
+      description: 'Rotating the graph around axes',
+      equation: `Rotated by (${transformations.rotation.x}°, ${transformations.rotation.y}°, ${transformations.rotation.z}°)`,
+      transformValues: {
+        translation: transformations.translation,
+        rotation: transformations.rotation,
+        scale: { x: 1, y: 1, z: 1 }
       }
     },
     {
       title: 'Apply Scaling',
       description: 'Stretching or compressing the graph',
-      equation: `${transformations.scaling.z} × f(${transformations.scaling.x}(x-${transformations.translation.x}), ${transformations.scaling.y}(y-${transformations.translation.y})) + ${transformations.translation.z}`,
-      transformValues: {
-        translation: transformations.translation,
-        scaling: transformations.scaling,
-        reflection: { x: false, y: false, z: false }
-      }
-    },
-    {
-      title: 'Apply Reflections',
-      description: 'Flipping the graph over axes',
-      equation: 'Final transformed function',
+      equation: `Scaled by (${transformations.scale.x}, ${transformations.scale.y}, ${transformations.scale.z})`,
       transformValues: transformations
     }
   ];
@@ -71,8 +75,8 @@ export function StepByStepTransformation({
           return prev;
         }
         onTransformationChange('translation', steps[prev + 1].transformValues.translation);
-        onTransformationChange('scaling', steps[prev + 1].transformValues.scaling);
-        onTransformationChange('reflection', steps[prev + 1].transformValues.reflection);
+        onTransformationChange('rotation', steps[prev + 1].transformValues.rotation);
+        onTransformationChange('scale', steps[prev + 1].transformValues.scale);
         return prev + 1;
       });
     }, animationSpeed);
@@ -82,16 +86,16 @@ export function StepByStepTransformation({
     setCurrentStep(0);
     setIsAnimating(false);
     onTransformationChange('translation', { x: 0, y: 0, z: 0 });
-    onTransformationChange('scaling', { x: 1, y: 1, z: 1 });
-    onTransformationChange('reflection', { x: false, y: false, z: false });
+    onTransformationChange('rotation', { x: 0, y: 0, z: 0 });
+    onTransformationChange('scale', { x: 1, y: 1, z: 1 });
   };
 
   const goToStep = (stepIndex: number) => {
     setCurrentStep(stepIndex);
     const step = steps[stepIndex];
     onTransformationChange('translation', step.transformValues.translation);
-    onTransformationChange('scaling', step.transformValues.scaling);
-    onTransformationChange('reflection', step.transformValues.reflection);
+    onTransformationChange('rotation', step.transformValues.rotation);
+    onTransformationChange('scale', step.transformValues.scale);
   };
 
   return (

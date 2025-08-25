@@ -9,8 +9,8 @@ interface MathVisualizationProps {
   functionExpression: string;
   transformations: {
     translation: { x: number; y: number; z: number };
-    scaling: { x: number; y: number; z: number };
-    reflection: { x: boolean; y: boolean; z: boolean };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
   };
 }
 
@@ -39,8 +39,8 @@ const FunctionVisualization: React.FC<{
         const y = evaluator(vars);
         
         // Apply transformations
-        const transformedY = y * transformations.scaling.y * (transformations.reflection.y ? -1 : 1);
-        const transformedX = x * transformations.scaling.x * (transformations.reflection.x ? -1 : 1) + transformations.translation.x;
+        const transformedY = y * transformations.scale.y;
+        const transformedX = x * transformations.scale.x + transformations.translation.x;
         
         points.push(new THREE.Vector3(transformedX, transformedY + transformations.translation.y, transformations.translation.z));
       }
@@ -69,8 +69,7 @@ const FunctionVisualization: React.FC<{
           z = Math.max(-20, Math.min(20, z));
           
           // Apply transformations
-          z *= transformations.scaling.z;
-          if (transformations.reflection.z) z *= -1;
+          z *= transformations.scale.z;
           
           positions[i + 2] = z;
         } catch (error) {
@@ -94,18 +93,24 @@ const FunctionVisualization: React.FC<{
       meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.1) * 0.02;
       
       // Apply transformations
-      const { translation, scaling, reflection } = transformations;
+      const { translation, rotation, scale } = transformations;
       
       meshRef.current.position.set(
-        translation.x * (reflection.x ? -1 : 1),
-        translation.z,
-        translation.y * (reflection.y ? -1 : 1)
+        translation.x,
+        translation.y,
+        translation.z
+      );
+      
+      meshRef.current.rotation.set(
+        (rotation.x * Math.PI) / 180,
+        (rotation.y * Math.PI) / 180,
+        (rotation.z * Math.PI) / 180
       );
       
       meshRef.current.scale.set(
-        scaling.x * (reflection.x ? -1 : 1),
-        1,
-        scaling.z * (reflection.z ? -1 : 1)
+        scale.x,
+        scale.y,
+        scale.z
       );
     }
   });

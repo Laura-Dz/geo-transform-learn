@@ -8,65 +8,91 @@ export class AuthService {
    * Register new user
    */
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: credentials.name,
-        email: credentials.email,
-        password: credentials.password,
-        role: credentials.role || 'student'
-      }),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Registration failed');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: credentials.name,
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+
+      const data = await response.json();
+      return {
+        user: data.user,
+        token: data.token
+      };
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
-    
-    return response.json();
   }
 
   /**
    * Login user
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: credentials.email,
-        password: credentials.password
-      }),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Login failed');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const data = await response.json();
+      return {
+        user: data.user,
+        token: data.token
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    return response.json();
   }
 
   /**
-   * Validate authentication token
+   * Validate token and get user
    */
   async validateToken(token: string): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/validate`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
-      },
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Invalid token");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Token validation failed');
+      }
+
+      const data = await response.json();
+      return data.user;
+    } catch (error) {
+      console.error('Token validation error:', error);
+      throw error;
     }
-    
-    const data = await response.json();
-    return data.user || data;
   }
 
   /**

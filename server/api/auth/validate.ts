@@ -15,7 +15,7 @@ export default async function handler(req: Request, res: Response) {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
+    const token = authHeader.substring(7); 
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
@@ -27,8 +27,7 @@ export default async function handler(req: Request, res: Response) {
         id: true,
         name: true,
         email: true,
-        createdAt: true,
-        updatedAt: true
+        createdAt: true
       }
     });
 
@@ -36,7 +35,13 @@ export default async function handler(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.status(200).json(user);
+    // Add default role for frontend compatibility
+    const userResponse = {
+      ...user,
+      role: 'student'
+    };
+
+    res.status(200).json({ user: userResponse });
   } catch (error) {
     console.error('Token validation error:', error);
     res.status(401).json({ error: 'Invalid token' });
