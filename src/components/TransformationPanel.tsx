@@ -5,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, Move, Scale, FlipHorizontal } from 'lucide-react';
+import { FunctionParser, FunctionInfo } from '@/lib/functionParser';
 
 interface TransformationPanelProps {
   transformations: {
@@ -13,11 +14,13 @@ interface TransformationPanelProps {
     reflection: { x: boolean; y: boolean; z: boolean };
   };
   onChange: (type: string, values: any) => void;
+  functionInfo?: FunctionInfo;
 }
 
 const TransformationPanel: React.FC<TransformationPanelProps> = ({
   transformations,
-  onChange
+  onChange,
+  functionInfo
 }) => {
   const handleTranslationChange = (axis: 'x' | 'y' | 'z', value: number[]) => {
     onChange('translation', {
@@ -47,34 +50,45 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
   };
 
   const getTransformedEquation = () => {
+    if (!functionInfo) return 'f(x,y) = x² + y²';
+    
     const { translation, scaling, reflection } = transformations;
-    let equation = 'f(x,y) = ';
+    const variables = functionInfo.variables;
     
-    // Build the transformed equation string
-    let xTerm = 'x';
-    let yTerm = 'y';
+    let equation = `f(${variables.join(',')}) = `;
     
-    // Apply scaling
-    if (scaling.x !== 1) xTerm = `${scaling.x}x`;
-    if (scaling.y !== 1) yTerm = `${scaling.y}y`;
+    // Build transformation description based on function type
+    const transformations_applied = [];
     
-    // Apply reflection
-    if (reflection.x) xTerm = `-${xTerm}`;
-    if (reflection.y) yTerm = `-${yTerm}`;
-    
-    // Apply translation
-    if (translation.x !== 0) {
-      xTerm = `(${xTerm} ${translation.x >= 0 ? '+' : ''}${translation.x})`;
-    }
-    if (translation.y !== 0) {
-      yTerm = `(${yTerm} ${translation.y >= 0 ? '+' : ''}${translation.y})`;
+    // Check for translations
+    const nonZeroTranslations = Object.entries(translation)
+      .filter(([_, value]) => value !== 0)
+      .map(([axis, value]) => `${axis}: ${value > 0 ? '+' : ''}${value}`);
+    if (nonZeroTranslations.length > 0) {
+      transformations_applied.push(`Translated (${nonZeroTranslations.join(', ')})`);
     }
     
-    equation += `${xTerm}² + ${yTerm}²`;
+    // Check for scaling
+    const nonUnityScaling = Object.entries(scaling)
+      .filter(([_, value]) => value !== 1)
+      .map(([axis, value]) => `${axis}: ×${value}`);
+    if (nonUnityScaling.length > 0) {
+      transformations_applied.push(`Scaled (${nonUnityScaling.join(', ')})`);
+    }
     
-    // Apply vertical scaling and translation
-    if (scaling.z !== 1) equation = `${scaling.z} × (${equation})`;
-    if (translation.z !== 0) equation += ` ${translation.z >= 0 ? '+' : ''}${translation.z}`;
+    // Check for reflections
+    const reflections = Object.entries(reflection)
+      .filter(([_, value]) => value)
+      .map(([axis, _]) => `${axis}-axis`);
+    if (reflections.length > 0) {
+      transformations_applied.push(`Reflected over ${reflections.join(', ')}`);
+    }
+    
+    if (transformations_applied.length === 0) {
+      equation += functionInfo.expression;
+    } else {
+      equation += `${functionInfo.expression} [${transformations_applied.join(', ')}]`;
+    }
     
     return equation;
   };
@@ -103,24 +117,33 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
           </div>
           
           <div className="space-y-3">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={axis} className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-sm text-gray-300">{axis.toUpperCase()}-axis</Label>
-                  <span className="text-sm text-white">
-                    {transformations.translation[axis].toFixed(1)}
-                  </span>
+            {(['x', 'y', 'z'] as const).map((axis) => {
+              // Show relevant axes based on function type
+              const isRelevant = !functionInfo || 
+                functionInfo.variables.includes(axis) || 
+                (axis === 'z' && functionInfo.type !== 'single');
+              
+              if (!isRelevant) return null;
+              
+              return (
+                <div key={axis} className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label className="text-sm text-gray-300">{axis.toUpperCase()}-axis</Label>
+                    <span className="text-sm text-white">
+                      {transformations.translation[axis].toFixed(1)}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[transformations.translation[axis]]}
+                    onValueChange={(value) => handleTranslationChange(axis, value)}
+                    min={-5}
+                    max={5}
+                    step={0.1}
+                    className="slider-cyan"
+                  />
                 </div>
-                <Slider
-                  value={[transformations.translation[axis]]}
-                  onValueChange={(value) => handleTranslationChange(axis, value)}
-                  min={-5}
-                  max={5}
-                  step={0.1}
-                  className="slider-cyan"
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -132,24 +155,33 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
           </div>
           
           <div className="space-y-3">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={axis} className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-sm text-gray-300">{axis.toUpperCase()}-axis</Label>
-                  <span className="text-sm text-white">
-                    {transformations.scaling[axis].toFixed(1)}
-                  </span>
+            {(['x', 'y', 'z'] as const).map((axis) => {
+              // Show relevant axes based on function type
+              const isRelevant = !functionInfo || 
+                functionInfo.variables.includes(axis) || 
+                (axis === 'z' && functionInfo.type !== 'single');
+              
+              if (!isRelevant) return null;
+              
+              return (
+                <div key={axis} className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label className="text-sm text-gray-300">{axis.toUpperCase()}-axis</Label>
+                    <span className="text-sm text-white">
+                      {transformations.scaling[axis].toFixed(1)}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[transformations.scaling[axis]]}
+                    onValueChange={(value) => handleScalingChange(axis, value)}
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    className="slider-yellow"
+                  />
                 </div>
-                <Slider
-                  value={[transformations.scaling[axis]]}
-                  onValueChange={(value) => handleScalingChange(axis, value)}
-                  min={0.1}
-                  max={3}
-                  step={0.1}
-                  className="slider-yellow"
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -161,17 +193,26 @@ const TransformationPanel: React.FC<TransformationPanelProps> = ({
           </div>
           
           <div className="space-y-3">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={axis} className="flex items-center justify-between">
-                <Label className="text-sm text-gray-300">
-                  Reflect over {axis.toUpperCase()}-axis
-                </Label>
-                <Switch
-                  checked={transformations.reflection[axis]}
-                  onCheckedChange={(checked) => handleReflectionChange(axis, checked)}
-                />
-              </div>
-            ))}
+            {(['x', 'y', 'z'] as const).map((axis) => {
+              // Show relevant axes based on function type
+              const isRelevant = !functionInfo || 
+                functionInfo.variables.includes(axis) || 
+                (axis === 'z' && functionInfo.type !== 'single');
+              
+              if (!isRelevant) return null;
+              
+              return (
+                <div key={axis} className="flex items-center justify-between">
+                  <Label className="text-sm text-gray-300">
+                    Reflect over {axis.toUpperCase()}-axis
+                  </Label>
+                  <Switch
+                    checked={transformations.reflection[axis]}
+                    onCheckedChange={(checked) => handleReflectionChange(axis, checked)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
 

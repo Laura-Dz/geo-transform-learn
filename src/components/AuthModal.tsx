@@ -4,15 +4,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { signup, login } from '@/services/authService';
+import { AuthService } from '@/services/AuthService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Lock } from 'lucide-react';
+import { User as UserIcon, Mail, Lock } from 'lucide-react';
+import { User } from '@/types/auth';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (user: any) => void;
+  onLogin: (credentials: any) => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
@@ -26,21 +27,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
   });
   const { toast } = useToast();
 
-  // In handleLogin function:
-const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
   setIsLoading(true);
 
   try {
-    const response = await login(loginData.email, loginData.password);
-    
-    localStorage.setItem('mathVizToken', response.token);
-    onLogin(response.user);
-    
-    toast({
-      title: "Login Successful!",
-      description: "Welcome to 3DZert",
-    });
+    // Pass credentials to parent component which handles the actual login
+    await onLogin({ email: loginData.email, password: loginData.password });
   } catch (error: any) {
     toast({
       title: "Login Failed",
@@ -52,7 +45,6 @@ const handleLogin = async (e: React.FormEvent) => {
   }
 };
 
-// In handleRegister function:
 const handleRegister = async (e: React.FormEvent) => {
   e.preventDefault();
   
@@ -68,14 +60,12 @@ const handleRegister = async (e: React.FormEvent) => {
   setIsLoading(true);
 
   try {
-    const response = await signup(registerData.name, registerData.email, registerData.password);
-    
-    localStorage.setItem('mathVizToken', response.token);
-    onLogin(response.user);
-    
-    toast({
-      title: "Registration Successful!",
-      description: "Welcome to 3DZert! Your learning journey begins now.",
+    // Pass credentials to parent component which handles the actual registration
+    await onLogin({
+      name: registerData.name,
+      email: registerData.email,
+      password: registerData.password,
+      role: 'student' // Default role for new registrations
     });
   } catch (error: any) {
     toast({
@@ -219,7 +209,7 @@ const handleRegister = async (e: React.FormEvent) => {
               <div className="space-y-2">
                 <Label htmlFor="register-name" className="text-white">Full Name</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="register-name"
                     type="text"

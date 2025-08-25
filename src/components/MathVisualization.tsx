@@ -1,8 +1,9 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Text } from '@react-three/drei';
+import { OrbitControls, Grid, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import { FunctionParser, FunctionInfo } from '@/lib/functionParser';
 
 interface MathVisualizationProps {
   functionExpression: string;
@@ -13,62 +14,84 @@ interface MathVisualizationProps {
   };
 }
 
-const FunctionSurface: React.FC<{ 
-  expression: string; 
+const FunctionVisualization: React.FC<{ 
+  functionInfo: FunctionInfo; 
   transformations: any;
-}> = ({ expression, transformations }) => {
+}> = ({ functionInfo, transformations }) => {
   const meshRef = useRef<THREE.Mesh>(null);
+  const lineRef = useRef<THREE.Line>(null);
   
-  const geometry = useMemo(() => {
-    const size = 10;
-    const resolution = 50;
-    const geometry = new THREE.PlaneGeometry(size, size, resolution, resolution);
-    const positions = geometry.attributes.position.array as Float32Array;
+  const visualizationMode = FunctionParser.getVisualizationMode(functionInfo);
+  
+  // Generate geometry based on function type
+  const { geometry, linePoints } = useMemo(() => {
+    const { evaluator, variables, type } = functionInfo;
     
-    // Parse and evaluate the function
-    for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i];
-      const y = positions[i + 1];
+    if (type === 'single') {
+      // 1D function - create line plot
+      const points: THREE.Vector3[] = [];
+      const range = 10;
+      const resolution = 200;
       
-      try {
-        // Simple function evaluation (expand this for more complex functions)
-        let z = 0;
-        if (expression.includes('x^2') && expression.includes('y^2')) {
-          z = (x * x + y * y) * 0.1; // Scale down for better visualization
-        } else if (expression.includes('sin(x)')) {
-          z = Math.sin(x) * 2;
-        } else if (expression.includes('cos(x)')) {
-          z = Math.cos(x) * 2;
-        } else if (expression.includes('x^2')) {
-          z = x * x * 0.1;
-        } else {
-          z = Math.sin(x) * Math.cos(y);
-        }
+      for (let i = 0; i <= resolution; i++) {
+        const x = (i / resolution - 0.5) * range * 2;
+        const vars: Record<string, number> = { [variables[0]]: x };
+        const y = evaluator(vars);
         
         // Apply transformations
-        const { translation, scaling, reflection } = transformations;
+        const transformedY = y * transformations.scaling.y * (transformations.reflection.y ? -1 : 1);
+        const transformedX = x * transformations.scaling.x * (transformations.reflection.x ? -1 : 1) + transformations.translation.x;
         
-        // Apply scaling
-        z *= scaling.y;
-        
-        // Apply reflection
-        if (reflection.y) z *= -1;
-        
-        positions[i + 2] = z;
-      } catch (error) {
-        positions[i + 2] = 0;
+        points.push(new THREE.Vector3(transformedX, transformedY + transformations.translation.y, transformations.translation.z));
       }
+      
+      return { geometry: null, linePoints: points };
+    } else if (type === 'bivariate') {
+      // 2D function - create surface
+      const size = 10;
+      const resolution = 50;
+      const geometry = new THREE.PlaneGeometry(size, size, resolution, resolution);
+      const positions = geometry.attributes.position.array as Float32Array;
+      
+      for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const y = positions[i + 1];
+        
+        try {
+          const vars: Record<string, number> = {};
+          if (variables.includes('x')) vars.x = x;
+          if (variables.includes('y')) vars.y = y;
+          if (variables.includes('z')) vars.z = 0;
+          
+          let z = evaluator(vars);
+          
+          // Clamp extreme values for better visualization
+          z = Math.max(-20, Math.min(20, z));
+          
+          // Apply transformations
+          z *= transformations.scaling.z;
+          if (transformations.reflection.z) z *= -1;
+          
+          positions[i + 2] = z;
+        } catch (error) {
+          positions[i + 2] = 0;
+        }
+      }
+      
+      geometry.attributes.position.needsUpdate = true;
+      geometry.computeVertexNormals();
+      return { geometry, linePoints: null };
+    } else {
+      // 3D or parametric functions - create point cloud or wireframe
+      const geometry = new THREE.SphereGeometry(0.05, 8, 8);
+      return { geometry, linePoints: null };
     }
-    
-    geometry.attributes.position.needsUpdate = true;
-    geometry.computeVertexNormals();
-    return geometry;
-  }, [expression, transformations]);
+  }, [functionInfo, transformations]);
 
   useFrame((state) => {
     if (meshRef.current) {
       // Subtle animation
-      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.1) * 0.05;
+      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.1) * 0.02;
       
       // Apply transformations
       const { translation, scaling, reflection } = transformations;
@@ -87,15 +110,35 @@ const FunctionSurface: React.FC<{
     }
   });
 
-  return (
-    <mesh ref={meshRef} geometry={geometry}>
-      <meshStandardMaterial
+  if (visualizationMode === 'line' && linePoints) {
+    return (
+      <Line
+        points={linePoints}
         color="#00ffff"
-        transparent
-        opacity={0.8}
-        side={THREE.DoubleSide}
-        wireframe={false}
+        lineWidth={3}
       />
+    );
+  }
+
+  if (visualizationMode === 'surface' && geometry) {
+    return (
+      <mesh ref={meshRef} geometry={geometry}>
+        <meshStandardMaterial
+          color="#00ffff"
+          transparent
+          opacity={0.8}
+          side={THREE.DoubleSide}
+          wireframe={false}
+        />
+      </mesh>
+    );
+  }
+
+  // Fallback for complex functions
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[0.1, 16, 16]} />
+      <meshStandardMaterial color="#ff00ff" />
     </mesh>
   );
 };
@@ -185,6 +228,12 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
   transformations
 }) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([15, 15, 15]);
+  
+  const functionInfo = useMemo(() => {
+    return FunctionParser.parse(functionExpression);
+  }, [functionExpression]);
+  
+  const visualizationMode = FunctionParser.getVisualizationMode(functionInfo);
 
   return (
     <div className="h-96 w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden">
@@ -197,8 +246,8 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
         
         <CoordinateSystem />
-        <FunctionSurface 
-          expression={functionExpression} 
+        <FunctionVisualization 
+          functionInfo={functionInfo} 
           transformations={transformations}
         />
         
@@ -212,8 +261,11 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
       </Canvas>
       
       <div className="absolute top-4 left-4 bg-black/50 p-2 rounded text-white text-sm">
-        <p>f(x,y) = {functionExpression}</p>
+        <p>f({functionInfo.variables.join(',')}) = {functionExpression}</p>
         <p className="text-xs text-gray-300 mt-1">
+          Type: {functionInfo.type} • Mode: {visualizationMode}
+        </p>
+        <p className="text-xs text-gray-300">
           Click and drag to rotate • Scroll to zoom
         </p>
       </div>

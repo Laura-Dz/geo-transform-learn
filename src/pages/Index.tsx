@@ -6,13 +6,22 @@ import AuthModal from '@/components/AuthModal';
 import { Calculator, BookOpen, TrendingUp, User, Target, Trophy, Gamepad2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const Index = () => {
+interface IndexProps {
+  onShowAuthModal?: () => void;
+}
+
+const Index: React.FC<IndexProps> = ({ onShowAuthModal }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = (userData: any) => {
-    // This will be handled by the App component
-    console.log('Login handled by App component');
+    // Close modal and let parent handle authentication
+    setShowAuthModal(false);
+    // This should be handled by the parent App component
+    toast({
+      title: "Authentication",
+      description: "Please use the main login button in the header.",
+    });
   };
 
   const features = [
@@ -59,7 +68,7 @@ const Index = () => {
           </div>
           
           <Button 
-            onClick={() => setShowAuthModal(true)} 
+            onClick={() => onShowAuthModal ? onShowAuthModal() : setShowAuthModal(true)} 
             className="bg-cyan-500 hover:bg-cyan-600"
           >
             <User className="h-4 w-4 mr-2" />
@@ -84,7 +93,7 @@ const Index = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => onShowAuthModal ? onShowAuthModal() : setShowAuthModal(true)}
                 size="lg"
                 className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-lg px-8 py-4"
               >
@@ -165,7 +174,7 @@ const Index = () => {
                 Join thousands of students who have already discovered the power of visual learning.
               </p>
               <Button 
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => onShowAuthModal ? onShowAuthModal() : setShowAuthModal(true)}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-lg py-3"
               >
                 Get Started Today
@@ -175,11 +184,13 @@ const Index = () => {
         </div>
       </div>
 
-      <AuthModal 
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onLogin={handleLogin}
-      />
+      {!onShowAuthModal && (
+        <AuthModal 
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={handleLogin}
+        />
+      )}
     </div>
   );
 };

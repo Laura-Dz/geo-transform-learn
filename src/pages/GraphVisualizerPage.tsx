@@ -1,11 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import MathVisualization from '@/components/MathVisualization';
 import TransformationPanel from '@/components/TransformationPanel';
 import ConceptExplanation from '@/components/ConceptExplanation';
 import { StepByStepTransformation } from '@/components/features/StepByStepTransformation';
+import { FunctionParser } from '@/lib/functionParser';
 
 const GraphVisualizerPage = () => {
   const [currentFunction, setCurrentFunction] = useState('x^2 + y^2');
@@ -15,6 +19,10 @@ const GraphVisualizerPage = () => {
     reflection: { x: false, y: false, z: false }
   });
   const [showStepByStep, setShowStepByStep] = useState(false);
+
+  const functionInfo = useMemo(() => {
+    return FunctionParser.parse(currentFunction);
+  }, [currentFunction]);
 
   const handleTransformationChange = (type: string, values: any) => {
     setTransformations(prev => ({
@@ -36,18 +44,62 @@ const GraphVisualizerPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Function Input */}
+        {/* Enhanced Function Input */}
         <Card className="p-6 bg-black/30 border-white/20">
           <h3 className="text-lg font-semibold text-white mb-4">Function Input</h3>
-          <Input
-            value={currentFunction}
-            onChange={(e) => setCurrentFunction(e.target.value)}
-            placeholder="Enter function (e.g., x^2 + y^2)"
-            className="bg-black/50 border-white/30 text-white"
-          />
-          <p className="text-sm text-gray-400 mt-2">
-            Current: f(x,y) = {currentFunction}
-          </p>
+          
+          {/* Function Expression Input */}
+          <div className="space-y-4">
+            <Input
+              value={currentFunction}
+              onChange={(e) => setCurrentFunction(e.target.value)}
+              placeholder="Enter function (e.g., x^2 + y^2, sin(x), x^3 + y^2 - z)"
+              className="bg-black/50 border-white/30 text-white"
+            />
+            
+            {/* Function Info Display */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Variables:</span>
+                {functionInfo.variables.map(variable => (
+                  <Badge key={variable} variant="secondary" className="bg-cyan-500/20 text-cyan-300">
+                    {variable}
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Type:</span>
+                <Badge variant="outline" className="border-yellow-500/50 text-yellow-300">
+                  {functionInfo.type}
+                </Badge>
+                <span className="text-sm text-gray-400">Mode:</span>
+                <Badge variant="outline" className="border-purple-500/50 text-purple-300">
+                  {FunctionParser.getVisualizationMode(functionInfo)}
+                </Badge>
+              </div>
+            </div>
+            
+            {/* Sample Functions Dropdown */}
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Quick Examples:</label>
+              <Select onValueChange={(value) => setCurrentFunction(value)}>
+                <SelectTrigger className="bg-black/50 border-white/30 text-white">
+                  <SelectValue placeholder="Choose a sample function" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-white/30">
+                  {Object.entries(FunctionParser.getSampleFunctions()).map(([name, expr]) => (
+                    <SelectItem key={name} value={expr} className="text-white hover:bg-slate-700">
+                      {name}: {expr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <p className="text-sm text-gray-400">
+              Current: f({functionInfo.variables.join(',')}) = {currentFunction}
+            </p>
+          </div>
         </Card>
 
         {/* 3D Visualization */}
@@ -71,6 +123,7 @@ const GraphVisualizerPage = () => {
         <TransformationPanel
           transformations={transformations}
           onChange={handleTransformationChange}
+          functionInfo={functionInfo}
         />
 
         <ConceptExplanation 
