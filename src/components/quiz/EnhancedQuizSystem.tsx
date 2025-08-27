@@ -8,6 +8,8 @@ import MathVisualization from '@/components/MathVisualization';
 import { QuizQuestion, QuizSession, QuizAnswer, QuizResult } from '@/types/quiz';
 import { QUIZ_QUESTIONS } from '@/data/quizData';
 import { useToast } from '@/hooks/use-toast';
+import { quizService } from '@/services';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EnhancedQuizSystemProps {
   onQuizComplete?: (result: QuizResult) => void;

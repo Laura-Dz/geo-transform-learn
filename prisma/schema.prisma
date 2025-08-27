@@ -17,7 +17,12 @@ model User {
   name      String
   password  String
   role      Role     @default(STUDENT)
+  bio       String?
+  avatar    String?
+  motivationalQuote String?
+  learningGoals String[] @default([])
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   lastLogin DateTime?
 
   // Relationships
@@ -28,6 +33,8 @@ model User {
   aiInteractions  AIInteraction[]
   savedFunctions  SavedFunction[]
   studySessions   StudySession[]
+  challengeSubmissions ChallengeSubmission[]
+  practiceProgress PracticeProgress[]
 
   @@map("users")
 }
@@ -94,7 +101,10 @@ model Quiz {
   description String?
   timeLimit   Int?         // in minutes
   difficulty  Difficulty
+  category    String?      // Quiz category
   isPublished Boolean      @default(false)
+  isTimedMode Boolean      @default(false)
+  adaptiveDifficulty Boolean @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -111,9 +121,14 @@ model QuizQuestion {
   quizId        String            @db.ObjectId
   questionText  String
   questionType  QuestionType
+  category      String?           // Question category
+  functionExpression String?      // 3D function for visualization
+  transformations Json?           // 3D transformations data
   options       Json?             // For multiple choice questions
   correctAnswer String
   explanation   String?
+  hint          String?           // Hint for the question
+  timeLimit     Int?              // Time limit in seconds
   points        Int               @default(1)
   order         Int
   createdAt     DateTime          @default(now())
@@ -129,9 +144,13 @@ model QuizAttempt {
   userId      String   @db.ObjectId
   quizId      String   @db.ObjectId
   score       Float
+  accuracy    Float?   // Accuracy percentage
   totalPoints Int
   timeSpent   Int?     // in seconds
+  hintsUsed   Int      @default(0)
+  isTimedMode Boolean  @default(false)
   answersData Json     // User's answers summary
+  categoryBreakdown Json? // Performance by category
   completedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -256,6 +275,95 @@ model SavedFunction {
   @@map("saved_functions")
 }
 
+// Challenge System
+model Challenge {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  type        ChallengeType
+  difficulty  Difficulty
+  category    String
+  scenario    String?
+  realWorldContext String?
+  targetGraph Json?    // Target function and transformations
+  constraints Json?    // Challenge constraints
+  hints       String[] // Array of hints
+  solution    Json?    // Solution steps and explanation
+  points      Int      @default(0)
+  unlockRequirements String[] // Array of requirement IDs
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  submissions ChallengeSubmission[]
+
+  @@map("challenges")
+}
+
+model ChallengeSubmission {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  challengeId String   @db.ObjectId
+  steps       Json     // Array of challenge steps
+  finalFunction String
+  finalTransformations Json
+  timeSpent   Int      // in seconds
+  hintsUsed   Int      @default(0)
+  isCorrect   Boolean
+  efficiency  Float    @default(0) // 0-1 score
+  creativity  Float    @default(0) // 0-1 score
+  completedAt DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("challenge_submissions")
+}
+
+// Practice System
+model PracticeScenario {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  context     PracticeContext
+  realWorldExample String
+  imageUrl    String?
+  animationUrl String?
+  guidedSteps Json     // Array of practice steps
+  reflectionPrompts String[] // Array of reflection questions
+  unlockRequirements String[] // Array of requirement IDs
+  nextScenarios String[] // Array of next scenario IDs
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  progress PracticeProgress[]
+
+  @@map("practice_scenarios")
+}
+
+model PracticeProgress {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  scenarioId  String   @db.ObjectId
+  completedSteps String[] // Array of completed step IDs
+  reflectionAnswers Json  // User's reflection answers
+  timeSpent   Int      @default(0) // in minutes
+  isCompleted Boolean  @default(false)
+  score       Float    @default(0)
+  insights    String[] // Array of user insights
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenario PracticeScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scenarioId])
+  @@map("practice_progress")
+}
+
 // Enums
 enum Role {
   STUDENT
@@ -293,6 +401,9 @@ enum QuestionType {
   SHORT_ANSWER
   EQUATION_INPUT
   GRAPH_INTERPRETATION
+  GRAPH_IDENTIFICATION
+  TRANSFORMATION_MATCH
+  PREDICTION
 }
 
 enum ProgressStatus {
@@ -308,4 +419,20 @@ enum AchievementCategory {
   SOCIAL
   MILESTONE
   STREAK
+}
+
+enum ChallengeType {
+  MATCH_TARGET
+  RECONSTRUCTION
+  CREATIVE_DESIGN
+  OPTIMIZATION
+}
+
+enum PracticeContext {
+  PHYSICS
+  BIOLOGY
+  ECONOMICS
+  ENGINEERING
+  MUSIC
+  SPORTS
 }
