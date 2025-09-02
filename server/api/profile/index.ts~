@@ -1,0 +1,375 @@
+// server/api/profile/index.ts
+import { Router, Request, Response, NextFunction } from 'express';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { z } from 'zod';
+import jwt from 'jsonwebtoken';
+
+type Role = 'ADMIN' | 'STUDENT';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        role: string;
+      };
+    }
+  }
+}
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    role: string;
+  };
+};
+
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error']
+});
+
+const router = Router();
+
+// Type for the user with relations from Prisma
+type UserWithRelations = Prisma.UserGetPayload<{
+  include: {
+    profile: true;
+    achievements: {
+      include: {
+        achievement: true;
+      };
+    };
+    quizAttempts: {
+      include: {
+        quiz: {
+          select: {
+            title: true;
+          };
+        };
+      };
+    };
+    challengeSubmissions: {
+      include: {
+        challenge: {
+          select: {
+            title: true;
+          };
+        };
+      };
+    };
+  };
+}> & {
+  // Add direct fields from User model that we want to expose
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  bio?: string;
+  avatar?: string;
+  motivationalQuote?: string;
+  learningGoals: string[];
+};
+
+// Response type for the profile API
+type ProfileResponse = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  avatar?: string;
+  bio?: string;
+  motivationalQuote?: string;
+  learningGoals: string[];
+  achievements: Array<{
+    id: string;
+    unlockedAt: Date;
+    achievement: {
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      points: number;
+    };
+  }>;
+  recentQuizAttempts: Array<{
+    id: string;
+    score: number | null;
+    completedAt: Date | null;
+    quiz: { title: string } | null;
+  }>;
+  recentChallengeSubmissions: Array<{
+    id: string;
+    score: number | null;
+    submittedAt: Date | null;
+    challenge: { title: string } | null;
+  }>;
+  statistics: {
+    totalQuizzes: number;
+    totalChallenges: number;
+    averageQuizScore: number;
+    totalPoints: number;
+    achievementsUnlocked: number;
+  };
+};
+
+// Input validation schemas
+const userIdParamsSchema = z.object({
+  userId: z.string().uuid()
+});
+
+// Middleware to verify JWT token
+const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string; role?: string };
+    req.user = {
+      id: decoded.userId,
+      role: decoded.role?.toLowerCase() || 'student'
+    };
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// GET /api/profile/:userId - Get user profile
+router.get('/:userId', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Validate request parameters
+    const { userId } = userIdParamsSchema.parse(req.params);
+    
+    // Check if user has permission to view this profile
+    if (req.user?.role !== 'ADMIN' && req.user?.id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get user with all relations in a single query
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: true,
+        achievements: {
+          include: {
+            achievement: true
+          },
+          orderBy: { unlockedAt: 'desc' },
+          take: 5
+        },
+        quizAttempts: {
+          include: {
+            quiz: {
+              select: { title: true }
+            }
+          },
+          orderBy: { completedAt: 'desc' },
+          take: 5
+        },
+        challengeSubmissions: {
+          include: {
+            challenge: {
+              select: { title: true }
+            }
+          },
+          orderBy: { submittedAt: 'desc' },
+          take: 5
+        }
+      }
+    }) as UserWithRelations | null;
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Merge user and profile data
+    const userWithProfile: UserWithRelations = {
+      ...user,
+      // Spread profile fields if they exist
+      ...(user.profile ? {
+        bio: user.profile.bio || undefined,
+        avatar: user.profile.avatar || undefined,
+        learningGoals: user.learningGoals || []
+      } : {
+        learningGoals: user.learningGoals || []
+      })
+    };
+
+    // Helper function to safely parse learning goals
+    const getLearningGoals = (profile: { learningGoals?: string | string[] | null } | null): string[] => {
+      if (!profile?.learningGoals) return [];
+      try {
+        if (Array.isArray(profile.learningGoals)) {
+          return profile.learningGoals;
+        }
+        if (typeof profile.learningGoals === 'string') {
+          return JSON.parse(profile.learningGoals);
+        }
+        return [];
+      } catch (e) {
+        console.error('Error parsing learning goals:', e);
+        return [];
+      }
+    };
+
+    // Calculate statistics
+    const totalQuizzes = user.quizAttempts?.length || 0;
+    const totalChallenges = user.challengeSubmissions?.length || 0;
+    const achievementsUnlocked = user.achievements?.length || 0;
+    
+    const averageQuizScore = totalQuizzes > 0 && user.quizAttempts
+      ? Number((user.quizAttempts.reduce((sum: number, a: { score: number | null }) => 
+          sum + (a.score || 0), 0) / totalQuizzes).toFixed(1))
+      : 0;
+      
+    const totalPoints = user.achievements?.reduce(
+      (sum: number, a: { achievement: { points: number } }) => sum + (a.achievement?.points || 0), 
+      0
+    ) || 0;
+
+    // Map the response with proper typing
+    const response: ProfileResponse = {
+      id: userWithProfile.id,
+      name: userWithProfile.name || '',
+      email: userWithProfile.email,
+      role: userWithProfile.role || 'STUDENT',
+      ...(userWithProfile.avatar ? { avatar: userWithProfile.avatar } : {}),
+      ...(userWithProfile.bio ? { bio: userWithProfile.bio } : {}),
+      ...(userWithProfile.motivationalQuote ? { 
+        motivationalQuote: userWithProfile.motivationalQuote 
+      } : {}),
+      learningGoals: Array.isArray(userWithProfile.learningGoals) 
+        ? userWithProfile.learningGoals 
+        : [],
+      achievements: (userWithProfile.achievements || []).map((ua) => ({
+        id: ua.id,
+        unlockedAt: ua.unlockedAt,
+        achievement: {
+          id: ua.achievement.id,
+          title: ua.achievement.title,
+          description: ua.achievement.description,
+          icon: ua.achievement.icon,
+          points: ua.achievement.points
+        }
+      })),
+      recentQuizAttempts: (userWithProfile.quizAttempts || []).map((attempt) => ({
+        id: attempt.id,
+        score: attempt.score,
+        completedAt: attempt.completedAt,
+        quiz: attempt.quiz
+      })),
+      recentChallengeSubmissions: (userWithProfile.challengeSubmissions || []).map((submission) => ({
+        id: submission.id,
+        score: submission.score,
+        submittedAt: submission.submittedAt,
+        challenge: submission.challenge
+      })),
+      statistics: {
+        totalQuizzes,
+        totalChallenges,
+        averageQuizScore,
+        totalPoints,
+        achievementsUnlocked
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Profile error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        error: 'Validation error',
+        details: error.errors 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'An unknown error occurred'
+    });
+  }
+});
+
+// POST /api/profile/:userId - Update user profile
+router.post('/:userId', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    if (req.user?.id !== userId && (req.user as any)?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { avatar, bio, motivationalQuote, learningGoals } = req.body;
+
+    // Update or create user profile
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        profile: {
+          upsert: {
+            create: {
+              avatar,
+              bio,
+              motivationalQuote,
+              learningGoals: Array.isArray(learningGoals) 
+                ? JSON.stringify(learningGoals)
+                : JSON.stringify([])
+            },
+            update: {
+              ...(avatar !== undefined && { avatar }),
+              ...(bio !== undefined && { bio }),
+              ...(motivationalQuote !== undefined && { motivationalQuote }),
+              ...(learningGoals !== undefined && { 
+                learningGoals: Array.isArray(learningGoals) 
+                  ? JSON.stringify(learningGoals)
+                  : JSON.stringify([])
+              })
+            }
+          }
+        }
+      },
+      include: {
+        profile: true
+      }
+    }) as any; // Temporary type assertion
+
+    // Format the response
+    const response: ProfileResponse = {
+      id: updatedUser.id,
+      name: updatedUser.name || '',
+      email: updatedUser.email,
+      role: (updatedUser as any).role as Role,
+      ...(updatedUser.profile?.avatar && { avatar: (updatedUser.profile as any).avatar }),
+      ...(updatedUser.profile?.bio && { bio: (updatedUser.profile as any).bio }),
+      ...(updatedUser.profile && { 
+        motivationalQuote: (updatedUser.profile as any).motivationalQuote 
+      }),
+      ...(updatedUser.profile && { 
+        learningGoals: (updatedUser.profile as any).learningGoals 
+          ? JSON.parse((updatedUser.profile as any).learningGoals)
+          : []
+      }),
+      achievements: [],
+      recentQuizAttempts: [],
+      recentChallengeSubmissions: [],
+      statistics: {
+        totalQuizzes: 0,
+        totalChallenges: 0,
+        averageQuizScore: 0,
+        totalPoints: 0,
+        achievementsUnlocked: 0
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+export default router;

@@ -15,7 +15,7 @@ import LearningHubPage from "./pages/LearningHubPage";
 import ProgressPage from "./pages/ProgressPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
-import Profile from "./components/profile/Profile";
+import ProfilePage from "./pages/ProfilePage";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginCredentials, RegisterCredentials } from "@/types/auth";
@@ -97,7 +97,8 @@ const AppContent = () => {
             <Route path="challenges" element={<ChallengesPage />} />
             <Route path="learning-hub" element={<LearningHubPage />} />
             <Route path="progress" element={<ProgressPage />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile/:userId" element={<ProfilePage />} />
           </Route>
         ) : (
           <Route path="/app/*" element={<Navigate to="/" replace />} />

@@ -62,61 +62,110 @@ class ProfileService {
 
   async getProfile(userId: string): Promise<ProfileData> {
     try {
+      console.log(`Fetching profile for user ${userId} from ${API_BASE_URL}/api/profile/${userId}`);
       const response = await fetch(`${API_BASE_URL}/api/profile/${userId}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch profile');
+        // First get the raw response text
+        const responseText = await response.text();
+        console.log('Raw server response:', responseText);
+        
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        // Try to parse as JSON
+        try {
+          const errorData = JSON.parse(responseText);
+          console.error('Error response data (parsed):', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response as JSON, using raw text');
+          errorMessage = responseText || errorMessage;
+        }
+        
+        console.error('Final error message:', errorMessage);
+        throw new Error(`Failed to fetch profile: ${errorMessage}`);
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      throw error;
-    }
-  }
-
-  async updateProfile(userId: string, updateData: ProfileUpdateData): Promise<{ message: string; user: any }> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/profile/${userId}`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile');
+      const data = await response.json();
+      console.log('Profile data received:', data);
+      
+      if (!data.user || !data.joinedDate) {
+        console.error('Missing required profile fields:', data);
+        throw new Error('Invalid profile data received from server: missing required fields');
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
-      console.error('Error updating profile:', error);
-      throw error;
+      console.error('Error in getProfile:', error);
+      throw error; // Re-throw to let the caller handle it
     }
   }
 
   async getProfileStats(userId: string): Promise<ProfileStats> {
     try {
+      console.log(`Fetching stats for user ${userId} from ${API_BASE_URL}/api/profile/${userId}/stats`);
       const response = await fetch(`${API_BASE_URL}/api/profile/${userId}/stats`, {
-        method: 'GET',
         headers: this.getAuthHeaders(),
       });
-
+      
+      console.log('Stats response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch profile stats');
+        // First get the raw response text
+        const responseText = await response.text();
+        console.log('Raw stats server response:', responseText);
+        
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        // Try to parse as JSON
+        try {
+          const errorData = JSON.parse(responseText);
+          console.error('Stats error response data (parsed):', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Could not parse stats error response as JSON, using raw text');
+          errorMessage = responseText || errorMessage;
+        }
+        
+        console.error('Final stats error message:', errorMessage);
+        throw new Error(`Failed to fetch profile stats: ${errorMessage}`);
       }
-
-      return await response.json();
+      
+      const data = await response.json();
+      console.log('Stats data received:', data);
+      
+      if (!Array.isArray(data.weeklyActivity) || !Array.isArray(data.activityBreakdown)) {
+        console.error('Invalid stats data structure received:', data);
+        throw new Error('Invalid stats data received from server: missing required arrays');
+      }
+      
+      return data;
     } catch (error) {
-      console.error('Error fetching profile stats:', error);
-      throw error;
+      console.error('Error in getProfileStats:', error);
+      throw error; // Re-throw to let the caller handle it
     }
   }
+
+  async updateProfile(userId: string, updateData: ProfileUpdateData): Promise<{ message: string; user: any }> {
+    const response = await fetch(`${API_BASE_URL}/api/profile/${userId}`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update profile');
+    }
+
+    return await response.json();
+  }
+
 
   // Helper method to format join date
   formatJoinDate(dateString: string): string {

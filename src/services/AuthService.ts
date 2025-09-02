@@ -107,7 +107,8 @@ export class AuthService {
    * Get role-based redirect path
    */
   getRoleBasedRedirectPath(user: User): string {
-    switch (user.role) {
+    const userRole = user.role?.toLowerCase();
+    switch (userRole) {
       case 'admin':
         return '/app/admin';
       case 'student':

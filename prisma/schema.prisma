@@ -36,7 +36,7 @@ model User {
   challengeSubmissions ChallengeSubmission[]
   practiceProgress PracticeProgress[]
 
-  @@map("users")
+  @@map("User")
 }
 
 model UserProfile {
@@ -239,7 +239,7 @@ model UserAchievement {
   @@unique([userId, achievementId])
   @@map("user_achievements")
 }
-
+ 
 // AI Assistant
 model AIInteraction {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -367,7 +367,6 @@ model PracticeProgress {
 // Enums
 enum Role {
   STUDENT
-  TEACHER
   ADMIN
 }
 
