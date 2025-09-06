@@ -48,7 +48,11 @@ const PracticeModePage = () => {
         <Card className="bg-black/30 border-white/20">
           <MathVisualization 
             functionExpression={currentProblem.baseFunction}
-            transformations={userTransformations}
+            transformations={{
+              translation: userTransformations.translation,
+              rotation: { x: 0, y: 0, z: 0 },
+              scale: userTransformations.scaling
+            }}
           />
         </Card>
       </div>

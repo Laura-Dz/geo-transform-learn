@@ -20,6 +20,8 @@ const MOCK_QUIZZES: Quiz[] = [
     description: 'Test your understanding of linear functions and their properties',
     difficulty: 'EASY',
     timeLimit: 15,
+    isTimedMode: false,
+    adaptiveDifficulty: false,
     isPublished: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -28,7 +30,7 @@ const MOCK_QUIZZES: Quiz[] = [
       {
         id: 'q1',
         quizId: '1',
-        question: 'What is the slope of the line y = 2x + 3?',
+        questionText: 'What is the slope of the line y = 2x + 3?',
         questionType: 'MULTIPLE_CHOICE',
         options: { choices: ['1', '2', '3', '5'] },
         correctAnswer: '2',
@@ -42,7 +44,7 @@ const MOCK_QUIZZES: Quiz[] = [
       {
         id: 'q2',
         quizId: '1',
-        question: 'A linear function always creates a straight line when graphed.',
+        questionText: 'A linear function always creates a straight line when graphed.',
         questionType: 'TRUE_FALSE',
         options: { choices: ['True', 'False'] },
         correctAnswer: 'True',
@@ -62,6 +64,8 @@ const MOCK_QUIZZES: Quiz[] = [
     description: 'Advanced problems on quadratic functions and parabolas',
     difficulty: 'MEDIUM',
     timeLimit: 25,
+    isTimedMode: false,
+    adaptiveDifficulty: false,
     isPublished: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -70,7 +74,7 @@ const MOCK_QUIZZES: Quiz[] = [
       {
         id: 'q3',
         quizId: '2',
-        question: 'Find the vertex of the parabola y = x² - 4x + 3',
+        questionText: 'Find the vertex of the parabola y = x² - 4x + 3',
         questionType: 'SHORT_ANSWER',
         options: null,
         correctAnswer: '(2, -1)',
@@ -84,7 +88,7 @@ const MOCK_QUIZZES: Quiz[] = [
       {
         id: 'q4',
         quizId: '2',
-        question: 'Write the equation for a parabola that opens downward with vertex at (0,0)',
+        questionText: 'Write the equation for a parabola that opens downward with vertex at (0,0)',
         questionType: 'EQUATION_INPUT',
         options: null,
         correctAnswer: 'y = -x^2',
@@ -185,10 +189,13 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
       userId: 'current-user',
       quizId: currentQuiz.id,
       score: totalScore,
-      maxScore,
+      totalPoints: maxScore,
+      accuracy: totalScore / maxScore,
       timeSpent,
+      hintsUsed: 0,
+      isTimedMode: false,
+      answersData: answers,
       completedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
       user: {} as any,
       quiz: currentQuiz,
       answers: []
@@ -350,7 +357,7 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
   }
 
   if (quizCompleted && results) {
-    const percentage = Math.round((results.score / results.maxScore) * 100);
+    const percentage = Math.round((results.score / results.totalPoints) * 100);
     const passed = percentage >= 70;
 
     return (
@@ -374,7 +381,7 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
           <CardContent className="space-y-6">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
-                {results.score}/{results.maxScore}
+                {results.score}/{results.totalPoints}
               </div>
               <div className="text-lg text-gray-600">
                 {percentage}% Score
@@ -388,7 +395,7 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
               </div>
               <div className="flex justify-between text-sm">
                 <span>Questions Correct:</span>
-                <span>{Math.round((results.score / results.maxScore) * currentQuiz.questions!.length)}/{currentQuiz.questions!.length}</span>
+                <span>{Math.round((results.score / results.totalPoints) * currentQuiz.questions!.length)}/{currentQuiz.questions!.length}</span>
               </div>
             </div>
 
@@ -428,7 +435,7 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
                       <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium">Question {index + 1}: {question.question}</p>
+                      <p className="font-medium">Question {index + 1}: {question.questionText}</p>
                       <p className="text-sm text-gray-600">Your answer: {userAnswer || 'No answer'}</p>
                       <p className="text-sm text-green-600">Correct answer: {question.correctAnswer}</p>
                       {question.explanation && (
@@ -522,7 +529,7 @@ const QuizSystem: React.FC<QuizSystemProps> = ({ selectedQuizId, onQuizComplete,
       {/* Question */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">{currentQuestion.question}</CardTitle>
+          <CardTitle className="text-lg">{currentQuestion.questionText}</CardTitle>
           <div className="flex items-center space-x-2">
             <Badge variant="outline">{currentQuestion.questionType.replace('_', ' ')}</Badge>
             <Badge variant="secondary">{currentQuestion.points} point{currentQuestion.points > 1 ? 's' : ''}</Badge>

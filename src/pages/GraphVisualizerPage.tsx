@@ -62,8 +62,8 @@ const GraphVisualizerPage = () => {
   // Convert new transformation format to legacy format for MathVisualization
   const legacyTransformations = useMemo(() => ({
     translation: transformations.translation,
-    scaling: transformations.scale,
-    reflection: { x: false, y: false, z: false }
+    rotation: transformations.rotation,
+    scale: transformations.scale
   }), [transformations]);
 
   return (
@@ -92,8 +92,7 @@ const GraphVisualizerPage = () => {
             <TabsTrigger value="progress" className="text-white data-[state=active]:bg-orange-600">
               Progress
             </TabsTrigger>
-            <TabsTrigger value="ai" className="text-white da
-            0 23ta-[state=active]:bg-cyan-600">
+            <TabsTrigger value="ai" className="text-white data-[state=active]:bg-cyan-600">
               AI Tutor
             </TabsTrigger>
           </TabsList>

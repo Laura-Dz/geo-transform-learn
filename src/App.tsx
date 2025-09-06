@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import AppLayout from "./components/layout/AppLayout";
 import Index from "./pages/Index";
-import VisualizerPage from "./pages/VisualizerPage";
+import VisualizerPage from "./pages/GraphVisualizerPage";
 import ConceptsPage from "./pages/ConceptsPage";
 import PracticePage from "./pages/PracticePage";
 import QuizPage from "./pages/QuizPage";
