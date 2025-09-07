@@ -27,6 +27,7 @@ export default async function handler(req: Request, res: Response) {
         id: true,
         name: true,
         email: true,
+        role: true,
         createdAt: true
       }
     });
@@ -35,10 +36,11 @@ export default async function handler(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Add default role for frontend compatibility
+    // Add normalized role for frontend compatibility
+    const normalizedRole = (user.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
     const userResponse = {
       ...user,
-      role: 'student'
+      role: normalizedRole
     };
 
     res.status(200).json({ user: userResponse });

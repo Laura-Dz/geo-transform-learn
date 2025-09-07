@@ -34,17 +34,17 @@ export default async function handler(req: Request, res: Response) {
     });
 
     // Generate token
+    const normalizedRole = (user.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, role: normalizedRole },
       process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
-    // Remove password from response and add default role
     const { password: _, ...userWithoutPassword } = user;
     const userResponse = {
       ...userWithoutPassword,
-      role: 'student' // Default role for frontend compatibility
+      role: normalizedRole
     };
 
     res.status(201).json({

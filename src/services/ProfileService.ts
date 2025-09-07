@@ -53,10 +53,10 @@ export interface ProfileStats {
 
 class ProfileService {
   private getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('mathVizToken');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('mathVizToken');
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     };
   }
 

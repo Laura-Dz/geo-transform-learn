@@ -34,8 +34,9 @@ export class AuthModel {
    */
   setAuthToken(token: string): void {
     this.authToken = token;
-    // Persist to localStorage
-    localStorage.setItem('mathVizToken', token);
+    localStorage.setItem('authToken', token);
+    // Cleanup legacy key
+    localStorage.removeItem('mathVizToken');
   }
 
   /**
@@ -43,8 +44,13 @@ export class AuthModel {
    */
   getAuthToken(): string | null {
     if (!this.authToken) {
-      // Try to get from localStorage
-      this.authToken = localStorage.getItem('mathVizToken');
+      // Try modern key first, then legacy
+      this.authToken = localStorage.getItem('authToken') || localStorage.getItem('mathVizToken');
+      if (this.authToken) {
+        // Migrate to modern key
+        localStorage.setItem('authToken', this.authToken);
+        localStorage.removeItem('mathVizToken');
+      }
     }
     return this.authToken;
   }
@@ -54,6 +60,7 @@ export class AuthModel {
    */
   clearAuthToken(): void {
     this.authToken = null;
+    localStorage.removeItem('authToken');
     localStorage.removeItem('mathVizToken');
   }
 

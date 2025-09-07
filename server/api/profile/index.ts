@@ -55,7 +55,7 @@ router.get('/:userId', authenticateToken, async (req: Request, res: Response) =>
     const { userId } = req.params;
     
     // Authorization check
-    if (req.user?.id !== userId && req.user?.role !== 'ADMIN') {
+    if (req.user?.id !== userId && req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -105,7 +105,7 @@ router.get('/:userId', authenticateToken, async (req: Request, res: Response) =>
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: typeof user.role === 'string' && user.role.toLowerCase() === 'admin' ? 'admin' : 'student',
         bio: user.bio,
         avatar: user.avatar,
         motivationalQuote: user.motivationalQuote,
@@ -155,81 +155,6 @@ router.get('/:userId', authenticateToken, async (req: Request, res: Response) =>
       error: 'Failed to fetch profile',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
-  }
-});
-
-export default router;
-        unlockedAt: ach.unlockedAt.toISOString(),
-        category: ach.achievement.category || 'General',
-        points: ach.achievement.points || 0
-      })),
-      recentQuizAttempts: (quizAttempts as QuizAttemptWithQuiz[]).map((attempt) => ({
-        id: attempt.id,
-        score: attempt.score ?? 0,
-        completedAt: attempt.completedAt?.toISOString() || null,
-        quiz: attempt.quiz ? { title: attempt.quiz.title } : null
-      })),
-      recentChallengeSubmissions: (challengeSubmissions as ChallengeSubmissionWithChallenge[]).map((submission) => ({
-        id: submission.id,
-        score: submission.score ?? 0,
-        submittedAt: submission.submittedAt.toISOString(),
-        challenge: submission.challenge ? { title: submission.challenge.title } : null
-      })),
-      statistics: {
-        totalQuizzes: quizAttempts.length,
-        totalChallenges: challengeSubmissions.length,
-        averageQuizScore: (quizAttempts as QuizAttemptWithQuiz[]).reduce(
-          (sum, attempt) => sum + (attempt.score ?? 0), 
-          0
-        ) / (quizAttempts.length || 1),
-        totalPoints: (achievements as AchievementWithDetails[]).reduce(
-          (sum, ach) => sum + (ach.achievement.points || 0), 
-          0
-        ),
-        achievementsUnlocked: achievements.length
-      }
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// POST /api/profile/:userId - Update user profile
-router.post('/:userId', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { userId } = req.params;
-    if (req.user?.id !== userId && req.user?.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const updateSchema = z.object({
-      bio: z.string().optional(),
-      avatar: z.string().optional(),
-      motivationalQuote: z.string().optional(),
-      learningGoals: z.array(z.string()).optional()
-    });
-
-    const validatedData = updateSchema.parse(req.body);
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: validatedData,
-      include: {
-        profile: true
-      }
-    });
-
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
-    } else {
-      res.status(500).json({ error: 'Failed to update profile' });
-    }
   }
 });
 

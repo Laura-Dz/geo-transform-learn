@@ -16,36 +16,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'student' | 'admin'>('all');
 
-  // Mock data for demonstration
+  // Fetch live users from backend (admin only)
   useEffect(() => {
-    // In a real app, this would fetch from your API
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'student',
-        createdAt: '2024-01-15',
-        lastLogin: '2024-08-24'
-      },
-      {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'student',
-        createdAt: '2024-02-10',
-        lastLogin: '2024-08-23'
-      },
-      {
-        id: '3',
-        name: 'Admin User',
-        email: 'admin@example.com',
-        role: 'admin',
-        createdAt: '2024-01-01',
-        lastLogin: '2024-08-24'
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('mathVizToken');
+        const res = await fetch('http://localhost:8080/api/users', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
+        const data = await res.json();
+        // Normalize dates to strings
+        const normalized: User[] = (data || []).map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: (u.role as string) === 'admin' ? 'admin' : 'student',
+          createdAt: typeof u.createdAt === 'string' ? u.createdAt : new Date(u.createdAt).toISOString().slice(0, 10),
+          lastLogin: u.lastLogin ? (typeof u.lastLogin === 'string' ? u.lastLogin : new Date(u.lastLogin).toISOString().slice(0, 10)) : undefined,
+        }));
+        setUsers(normalized);
+      } catch (e) {
+        console.error(e);
+        setUsers([]);
       }
-    ];
-    setUsers(mockUsers);
+    };
+    fetchUsers();
   }, []);
 
   const filteredUsers = users.filter(u => {
@@ -55,11 +54,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     return matchesSearch && matchesRole;
   });
 
+const today = new Date().toISOString().slice(0,10);
   const stats = {
     totalUsers: users.length,
     students: users.filter(u => u.role === 'student').length,
     admins: users.filter(u => u.role === 'admin').length,
-    activeToday: users.filter(u => u.lastLogin === '2024-08-24').length
+    activeToday: users.filter(u => (u.lastLogin || '').slice(0,10) === today).length
   };
 
   return (

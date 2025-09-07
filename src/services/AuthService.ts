@@ -1,7 +1,7 @@
 // Logic Layer - Service (renamed from authService.ts for consistency)
 import { User, AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/auth';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://localhost:8080'; // Backend API base
 
 export class AuthService {
   /**

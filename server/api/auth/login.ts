@@ -28,17 +28,20 @@ export default async function handler(req: Request, res: Response) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate token
+    // Normalize role to frontend expectations
+    const normalizedRole = (user.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
+
+    // Generate token with role
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, role: normalizedRole },
       process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
     const userResponse = {
-      ...userWithoutPassword
+      ...userWithoutPassword,
+      role: normalizedRole
     };
 
     res.status(200).json({

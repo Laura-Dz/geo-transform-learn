@@ -9,6 +9,7 @@ import practiceRoutes from './practice';
 import conceptRoutes from './concepts';
 import achievementRoutes from './achievements';
 import profileRoutes from './profile';
+import usersRoutes from './users';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/practice', practiceRoutes);
 app.use('/api/concepts', conceptRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/users', usersRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

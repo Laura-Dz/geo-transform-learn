@@ -26,7 +26,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     
     req.user = {
       id: decoded.userId,
-      role: decoded.role
+      role: (decoded.role as string | undefined)?.toLowerCase?.() || 'student'
     };
     
     next();
