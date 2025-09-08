@@ -1,4 +1,3 @@
-// server/api/auth/validate.ts
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma';
@@ -20,27 +19,27 @@ export default async function handler(req: Request, res: Response) {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
     
-    // Get user from database
+    // Get user from database - use include instead of select to avoid type issues
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true
-      }
+      where: { id: decoded.userId }
     });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Use type assertion to handle the role field
+    const userWithRole = user as any;
+    
     // Add normalized role for frontend compatibility
-    const normalizedRole = (user.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
+    const normalizedRole = (userWithRole.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
+    
     const userResponse = {
-      ...user,
-      role: normalizedRole
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: normalizedRole,
+      createdAt: user.createdAt
     };
 
     res.status(200).json({ user: userResponse });

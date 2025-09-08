@@ -1,4 +1,3 @@
-// server/api/auth/signup.ts
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -33,18 +32,24 @@ export default async function handler(req: Request, res: Response) {
       }
     });
 
+    // Use type assertion to handle the role field
+    const userWithRole = user as any;
+    const normalizedRole = (userWithRole.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
+    
     // Generate token
-    const normalizedRole = (user.role || 'STUDENT').toString().toLowerCase() === 'admin' ? 'admin' : 'student';
     const token = jwt.sign(
       { userId: user.id, role: normalizedRole },
       process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
-    const { password: _, ...userWithoutPassword } = user;
+    // Create response without password
     const userResponse = {
-      ...userWithoutPassword,
-      role: normalizedRole
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: normalizedRole,
+      createdAt: user.createdAt
     };
 
     res.status(201).json({

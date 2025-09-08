@@ -90,6 +90,8 @@ const AppContent = () => {
             />
             
             {/* Student routes (accessible by both students and admins) */}
+        
+        
             <Route path="visualizer" element={<VisualizerPage />} />
             <Route path="concepts" element={<ConceptsPage />} />
             <Route path="practice" element={<PracticePage />} />
