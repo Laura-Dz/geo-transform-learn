@@ -10,6 +10,7 @@ import conceptRoutes from './concepts';
 import achievementRoutes from './achievements';
 import profileRoutes from './profile';
 import usersRoutes from './users';
+import { generateContent } from './chat/aichat';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/concepts', conceptRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/chat', generateContent);  
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

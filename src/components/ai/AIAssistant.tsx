@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Bot, User, Send, ThumbsUp, ThumbsDown, Lightbulb } from 'lucide-react';
-import { AIMessage, getAIResponse, AI_CONVERSATION_STARTERS, AI_LEARNING_TIPS } from '@/types/ai';
+import { AIMessage, AI_CONVERSATION_STARTERS, AI_LEARNING_TIPS } from '@/types/ai';
 import { useToast } from '@/hooks/use-toast';
 
 interface AIAssistantProps {
@@ -47,6 +47,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
     }
   }, [isOpen, currentContext]);
 
+  // --- MODIFIED FUNCTION ---
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -57,40 +58,72 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
       timestamp: new Date().toISOString(),
       context: currentContext
     };
+    
+    // **KEY CHANGE**: Capture the history *before* adding the new user message.
+    const conversationHistory = [...messages];
 
     setMessages(prev => [...prev, userMessage]);
+    const promptToSend = inputValue; // Capture the value before clearing
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI thinking time
-    setTimeout(() => {
-      const aiResponse = getAIResponse(inputValue, {
-        currentFunction: currentContext?.function,
-        currentConcept: currentContext?.concept,
-        userLevel: currentContext?.userLevel || 'BEGINNER',
-        recentTopics: []
+    try {
+      // Make the API call to your backend
+      const response = await fetch('http://localhost:8080/api/chat', { // Your backend route
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // **KEY CHANGE**: Send the prompt AND the conversation history.
+        // We map the history to a simpler format that the backend expects.
+        body: JSON.stringify({ 
+          prompt: promptToSend,
+          history: conversationHistory.map(({ type, content }) => ({ type, content }))
+        }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.response || `Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+
+      // AFTER:
       const aiMessage: AIMessage = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: aiResponse.response,
+        content: stripMarkdown(data.response), // Clean response without markdown
         timestamp: new Date().toISOString(),
-        context: {
-          ...currentContext,
-          suggestions: aiResponse.suggestions,
-          examples: aiResponse.examples,
-          relatedConcepts: aiResponse.relatedConcepts
-        }
+        context: currentContext 
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+    } catch (error: any) {
+      console.error("Failed to get AI response:", error);
+      
+      const errorMessage: AIMessage = {
+        id: `ai-error-${Date.now()}`,
+        type: 'ai',
+        content: `Error: ${error.message || 'Could not connect to the AI assistant.'}`,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "An Error Occurred",
+        description: "Failed to get a response from the AI assistant.",
+        variant: "destructive",
+      });
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1500); // Random delay between 1-2.5 seconds
+    }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setInputValue(suggestion);
+    // You could optionally trigger handleSendMessage() here directly
   };
 
   const handleFeedback = (messageId: string, isPositive: boolean) => {
@@ -110,7 +143,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
   if (!isOpen) return null;
 
   return (
-    <Card className="fixed right-4 bottom-4 w-96 h-[600px] bg-white dark:bg-gray-900 shadow-2xl border-2 border-blue-200 dark:border-blue-800 z-50">
+    <Card className="fixed right-4 bottom-4 w-96 h-[600px] bg-white dark:bg-gray-900 shadow-2xl border-2 border-blue-200 dark:border-blue-800 z-50 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
         <div className="flex items-center space-x-2">
@@ -128,7 +161,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4 h-[400px]">
+      <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -146,46 +179,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
                   {message.type === 'ai' && <Bot className="h-4 w-4 mt-1 flex-shrink-0" />}
                   {message.type === 'user' && <User className="h-4 w-4 mt-1 flex-shrink-0" />}
                   <div className="flex-1">
-                    <p className="text-sm">{message.content}</p>
-                    
-                    {/* AI Suggestions */}
-                    {message.type === 'ai' && message.context?.suggestions && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs font-medium opacity-75">Try these:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {message.context.suggestions.map((suggestion: string, index: number) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs"
-                              onClick={() => handleSuggestionClick(suggestion)}
-                            >
-                              {suggestion}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* AI Examples */}
-                    {message.type === 'ai' && message.context?.examples && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs font-medium opacity-75">Examples:</p>
-                        <div className="space-y-1">
-                          {message.context.examples.map((example: string, index: number) => (
-                            <code
-                              key={index}
-                              className="block text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
-                              onClick={() => handleSuggestionClick(`Explain ${example}`)}
-                            >
-                              {example}
-                            </code>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Feedback buttons for AI messages */}
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     {message.type === 'ai' && (
                       <div className="flex items-center space-x-2 mt-2">
                         <Button
