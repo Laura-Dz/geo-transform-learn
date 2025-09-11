@@ -11,6 +11,7 @@ import achievementRoutes from './achievements';
 import profileRoutes from './profile';
 import usersRoutes from './users';
 import { generateContent } from './chat/aichat';
+import {contentAi} from './chat/conceptai';
 
 dotenv.config();
 
@@ -35,7 +36,7 @@ app.use('/api/achievements', achievementRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/chat', generateContent);  
-app.use('/api/tutor/explain', generateContent);  
+app.use('/api/tutor', contentAi);  
 
 
 // Health check endpoint
