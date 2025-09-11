@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Target, Zap, Trophy } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { BookOpen, Target, Zap, Trophy, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ConceptExplanation from '@/components/ConceptExplanation';
 
 const LearningHubPage = () => {
   const navigate = useNavigate();
+  const [currentFunction, setCurrentFunction] = useState('x^2 + y^2');
+  const [transformationDescription, setTransformationDescription] = useState('Exploring basic quadratic surface');
+  const [studentLevel] = useState('intermediate');
+  const [interestTags] = useState(['visualization', '3d-math']);
+  const [preferredTone] = useState('encouraging');
 
   return (
     <div className="space-y-8">
@@ -129,6 +136,48 @@ const LearningHubPage = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* AI-Powered Learning Assistant */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-black/30 border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI Learning Assistant
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Current Function:</label>
+              <Input
+                value={currentFunction}
+                onChange={(e) => setCurrentFunction(e.target.value)}
+                placeholder="Enter function (e.g., x^2 + y^2)"
+                className="bg-black/50 border-white/30 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">What are you exploring?</label>
+              <Input
+                value={transformationDescription}
+                onChange={(e) => setTransformationDescription(e.target.value)}
+                placeholder="Describe your mathematical exploration"
+                className="bg-black/50 border-white/30 text-white"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="lg:col-span-2">
+          <ConceptExplanation
+            currentFunction={currentFunction}
+            transformationDescription={transformationDescription}
+            studentLevel={studentLevel}
+            interestTags={interestTags}
+            preferredTone={preferredTone}
+          />
+        </div>
       </div>
 
       {/* Quick Stats */}
