@@ -128,10 +128,13 @@ const GraphVisualizerPage = () => {
               functionInfo={functionInfo}
             />
 
-            <ConceptExplanation 
-              transformations={transformations}
-              onConceptExplored={(concept) => console.log('Concept explored:', concept)}
-            />
+        <ConceptExplanation 
+          currentFunction={currentFunction}
+          transformationDescription={`Translation: (${transformations.translation.x}, ${transformations.translation.y}, ${transformations.translation.z}), Rotation: (${transformations.rotation.x}°, ${transformations.rotation.y}°, ${transformations.rotation.z}°), Scale: (${transformations.scale.x}, ${transformations.scale.y}, ${transformations.scale.z})`}
+          studentLevel="intermediate"
+          interestTags={["3d-visualization", "transformations"]}
+          preferredTone="encouraging"
+        />
           </div>
         </div>
       </div>

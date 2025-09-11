@@ -1,211 +1,171 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BookOpen, Lightbulb, ArrowRight } from 'lucide-react';
+import { Loader2, Lightbulb, ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ConceptExplanationProps {
-  transformations: {
-    translation: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
-    scale: { x: number; y: number; z: number };
-  };
-  detailed?: boolean;
-  onConceptExplored: (concept: string) => void;
+  currentFunction: string;
+  transformationDescription: string;
+  studentLevel?: string;
+  interestTags?: string[];
+  preferredTone?: string;
 }
 
-const concepts = {
-  translation: {
-    title: "Translation (Shifting)",
-    description: "Moving a function up, down, left, or right without changing its shape.",
-    explanation: "When we translate a function f(x,y), we're adding or subtracting constants to shift the entire graph. This doesn't change the function's fundamental shape, just its position in space.",
-    mathematical: "f(x,y) → f(x-h, y-k) + v",
-    examples: [
-      "f(x,y) = x² + y² → f(x,y) = (x-2)² + (y+1)² + 3",
-      "Shifts the paraboloid 2 units right, 1 unit forward, and 3 units up"
-    ],
-    realWorld: "Like moving a bowl on a table - the bowl's shape stays the same, but its position changes."
-  },
-  scaling: {
-    title: "Scaling (Stretching/Compressing)",
-    description: "Changing the size of a function by stretching or compressing it along different axes.",
-    explanation: "Scaling multiplies the input or output values by constants, making the function wider, narrower, taller, or shorter.",
-    mathematical: "f(x,y) → a·f(bx, cy)",
-    examples: [
-      "f(x,y) = x² + y² → f(x,y) = 2(x²/4 + y²/9)",
-      "Stretches horizontally and vertically, then doubles the height"
-    ],
-    realWorld: "Like stretching or squishing a rubber sheet - the pattern remains but dimensions change."
-  },
-  reflection: {
-    title: "Reflection (Flipping)",
-    description: "Creating a mirror image of the function across an axis or plane.",
-    explanation: "Reflection changes the sign of coordinates, creating a mirror image. This is like looking at the function in a mirror.",
-    mathematical: "f(x,y) → f(-x,y), f(x,-y), or -f(x,y)",
-    examples: [
-      "f(x,y) = x² + y² → f(x,y) = (-x)² + y² = x² + y²",
-      "f(x,y) = xy → f(x,y) = (-x)y = -xy"
-    ],
-    realWorld: "Like flipping a photograph - everything appears backwards but maintains its essential structure."
-  }
-};
+interface AIResponse {
+  explanation: string;
+  guidance: string;
+  relatedConcept?: {
+    title: string;
+    route: string;
+  };
+}
 
 const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
-  transformations,
-  detailed = false,
-  onConceptExplored
+  currentFunction,
+  transformationDescription,
+  studentLevel = 'intermediate',
+  interestTags = [],
+  preferredTone = 'encouraging'
 }) => {
-  const [activeTransformations, setActiveTransformations] = useState<string[]>([]);
-  const [selectedConcept, setSelectedConcept] = useState<string>('translation');
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState<AIResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  const fetchExplanation = useCallback(async () => {
+    if (!currentFunction?.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const payload = {
+        function: currentFunction,
+        transformation: transformationDescription,
+        level: studentLevel,
+        interests: interestTags,
+        tone: preferredTone
+      };
+
+      const response = await fetch('http://localhost:8080/api/tutor/explain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI explanation');
+      }
+
+      const data: AIResponse = await response.json();
+      setResponse(data);
+    } catch (err) {
+      setError('Unable to generate explanation. Please try again.');
+      console.error('Error fetching AI explanation:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentFunction, transformationDescription, studentLevel, interestTags, preferredTone]);
+
+  // Re-fetch when function or transformation changes
   useEffect(() => {
-    const active = [];
-    
-    // Check for active transformations
-    const { translation, rotation, scale } = transformations;
-    
-    if (translation.x !== 0 || translation.y !== 0 || translation.z !== 0) {
-      active.push('translation');
-    }
-    
-    if (rotation.x !== 0 || rotation.y !== 0 || rotation.z !== 0) {
-      active.push('rotation');
-    }
-    
-    if (scale.x !== 1 || scale.y !== 1 || scale.z !== 1) {
-      active.push('scaling');
-    }
-    
-    setActiveTransformations(active);
-  }, [transformations]);
+    const timeoutId = setTimeout(() => {
+      fetchExplanation();
+    }, 500); // Debounce for 500ms
 
-  const handleExploreMore = (conceptKey: string) => {
-    onConceptExplored(conceptKey);
-    setSelectedConcept(conceptKey);
-  };
-
-  if (detailed) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6 bg-black/30 border-white/20">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-            <BookOpen className="h-6 w-6 mr-2 text-cyan-400" />
-            Mathematical Transformations Guide
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {Object.entries(concepts).map(([key, concept]) => (
-              <Button
-                key={key}
-                variant={selectedConcept === key ? "default" : "outline"}
-                onClick={() => setSelectedConcept(key)}
-                className={`h-auto p-4 text-left ${
-                  selectedConcept === key 
-                    ? "bg-cyan-500 hover:bg-cyan-600" 
-                    : "border-white/30 text-white hover:bg-white/10"
-                }`}
-              >
-                <div>
-                  <h3 className="font-semibold mb-1">{concept.title}</h3>
-                  <p className="text-sm opacity-80">{concept.description}</p>
-                </div>
-              </Button>
-            ))}
-          </div>
-          
-          <div className="bg-slate-800/50 rounded-lg p-6 border border-white/10">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              {concepts[selectedConcept as keyof typeof concepts].title}
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold text-cyan-400 mb-2">Explanation</h4>
-                <p className="text-gray-300">
-                  {concepts[selectedConcept as keyof typeof concepts].explanation}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-cyan-400 mb-2">Mathematical Form</h4>
-                <code className="bg-black/50 p-2 rounded text-cyan-300 block">
-                  {concepts[selectedConcept as keyof typeof concepts].mathematical}
-                </code>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-cyan-400 mb-2">Examples</h4>
-                <div className="space-y-2">
-                  {concepts[selectedConcept as keyof typeof concepts].examples.map((example, index) => (
-                    <div key={index} className="bg-black/30 p-3 rounded">
-                      <code className="text-yellow-300 text-sm">{example}</code>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-cyan-400 mb-2">Real-World Analogy</h4>
-                <p className="text-gray-300 italic">
-                  {concepts[selectedConcept as keyof typeof concepts].realWorld}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+    return () => clearTimeout(timeoutId);
+  }, [fetchExplanation]);
 
   return (
-    <Card className="p-6 bg-black/30 border-white/20">
-      <div className="flex items-center space-x-2 mb-4">
-        <Lightbulb className="h-5 w-5 text-yellow-400" />
-        <h3 className="text-lg font-semibold text-white">Concept Explanation</h3>
+    <Card className="p-6 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-cyan-900/20 border-white/20 backdrop-blur-sm">
+      <div className="flex items-center space-x-2 mb-6">
+        <div className="p-2 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-lg">
+          <Sparkles className="h-5 w-5 text-yellow-400" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-white">AI Math Tutor</h3>
+          <p className="text-sm text-gray-400">Understanding your mathematical journey</p>
+        </div>
       </div>
 
-      {activeTransformations.length > 0 ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2 mb-4">
-            {activeTransformations.map((transformation) => (
-              <Badge 
-                key={transformation} 
-                variant="secondary" 
-                className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-              >
-                {concepts[transformation as keyof typeof concepts].title}
-              </Badge>
-            ))}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="relative">
+            <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
+            <div className="absolute inset-0 h-8 w-8 border-2 border-cyan-400/20 rounded-full animate-pulse"></div>
+          </div>
+          <p className="text-cyan-300 mt-4 text-sm font-medium animate-pulse">
+            Thinking through your graph...
+          </p>
+          <p className="text-gray-400 text-xs mt-1">
+            Analyzing function: {currentFunction}
+          </p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <Lightbulb className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-red-400 mb-4">{error}</p>
+          <Button
+            variant="outline"
+            onClick={fetchExplanation}
+            className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
+          >
+            Try Again
+          </Button>
+        </div>
+      ) : response ? (
+        <div className="space-y-6">
+          {/* Main Explanation */}
+          <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-5 border border-blue-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center">
+              <Lightbulb className="h-4 w-4 text-yellow-400 mr-2" />
+              Understanding Your Function
+            </h4>
+            <p className="text-gray-200 leading-relaxed text-sm">
+              {response.explanation}
+            </p>
           </div>
 
-          {activeTransformations.map((transformation) => (
-            <div key={transformation} className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
-              <h4 className="font-semibold text-white mb-2">
-                {concepts[transformation as keyof typeof concepts].title}
-              </h4>
-              <p className="text-sm text-gray-300 mb-3">
-                {concepts[transformation as keyof typeof concepts].description}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExploreMore(transformation)}
-                className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
-              >
-                Learn More <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+          {/* Guidance */}
+          <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 rounded-lg p-5 border border-green-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center">
+              <ArrowRight className="h-4 w-4 text-green-400 mr-2" />
+              Next Steps & Guidance
+            </h4>
+            <p className="text-gray-200 leading-relaxed text-sm">
+              {response.guidance}
+            </p>
+          </div>
+
+          {/* Related Concept Link */}
+          {response.relatedConcept && (
+            <div className="pt-4 border-t border-white/10">
+              <Link to={response.relatedConcept.route}>
+                <Button 
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-medium transition-all duration-200 transform hover:scale-[1.02]"
+                  size="lg"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Learn More: {response.relatedConcept.title}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
             </div>
-          ))}
+          )}
         </div>
       ) : (
         <div className="text-center py-8">
-          <Lightbulb className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-400 mb-4">
-            Apply transformations to see explanations here!
+          <div className="relative mb-4">
+            <Sparkles className="h-12 w-12 text-gray-400 mx-auto" />
+            <div className="absolute inset-0 h-12 w-12 bg-gradient-to-r from-cyan-400/20 to-purple-400/20 rounded-full animate-ping"></div>
+          </div>
+          <p className="text-gray-400 mb-2">
+            Ready to explore your function!
           </p>
           <p className="text-sm text-gray-500">
-            Try adjusting the sliders or toggles to see how they affect the function.
+            Enter a mathematical function to get personalized explanations.
           </p>
         </div>
       )}

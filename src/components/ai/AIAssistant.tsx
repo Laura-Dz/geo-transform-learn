@@ -93,7 +93,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, currentConte
       const aiMessage: AIMessage = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: stripMarkdown(data.response), // Clean response without markdown
+        content: data.response?.replace(/[*_`~]/g, '') || data.response, // Clean response without markdown
         timestamp: new Date().toISOString(),
         context: currentContext 
       };
