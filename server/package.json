@@ -9,7 +9,7 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.19.0",
+    "mongodb": "^6.19.0", 
     "prisma": "^6.15.0",
     "zod": "^4.1.5"
   },
@@ -25,9 +25,9 @@
     "schema": "../prisma/schema.prisma"
   },
   "scripts": {
-    "dev": "npx prisma generate --schema ../prisma/schema.prisma && ts-node --transpile-only api/index.ts",
+    "dev": "npx prisma generate --schema ../prisma/schema.prisma && nodemon --transpile-only api/index.ts",
     "build": "npx prisma generate --schema ../prisma/schema.prisma && tsc",
-    "start": "node build/index.js",
+    "start": "nodemon api/index.ts",
     "prisma:generate": "npx prisma generate --schema ../prisma/schema.prisma",
     "prisma:push": "npx prisma db push --schema ../prisma/schema.prisma"
   }

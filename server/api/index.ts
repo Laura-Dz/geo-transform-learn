@@ -18,7 +18,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8082'], // Support both frontend ports
+  origin: ['http://localhost:5173', 'http://localhost:8082','http://192.168.181.124:8082/'], // Support both frontend ports
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -35,6 +35,8 @@ app.use('/api/achievements', achievementRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/chat', generateContent);  
+app.use('/api/tutor/explain', generateContent);  
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+/* Reduce excessive vertical margins from KaTeX display math */
+.katex-display {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}

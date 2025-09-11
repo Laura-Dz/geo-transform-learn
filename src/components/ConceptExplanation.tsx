@@ -47,7 +47,7 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
         tone: preferredTone
       };
 
-      const response = await fetch('http://localhost:8080/api/tutor/explain', {
+      const response = await fetch('http://localhost:8080/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

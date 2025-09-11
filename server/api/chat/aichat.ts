@@ -10,7 +10,13 @@ interface ChatMessage {
 // Initialize the Google Generative AI client with the API key from the .env file
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+// Create separate models: one for classification (no system instruction) and one for chat (with system instruction)
+const classificationModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+
+const chatModel = genAI.getGenerativeModel({
+  model: 'gemini-2.5-flash-lite',
+  systemInstruction: 'You are an AI Math Tutor. Help the user with math concepts, problems, and explanations in a clear, step-by-step manner. Use  Markdown for clear and precise formatting and LaTeX delimiters for math (e.g., $inline$ or $$display$$). Keep responses concise and educational. your response must be clean'
+});
 
 /**
  * @route   POST /api/chat
@@ -39,7 +45,7 @@ export const generateContent = async (req: Request, res: Response) => {
       Respond with only one word: GREETING, MATH_QUESTION, or UNRELATED.
     `;
 
-    const classificationResult = await model.generateContent(classificationPrompt);
+    const classificationResult = await classificationModel.generateContent(classificationPrompt);
     const intent = classificationResult.response.text().trim();
 
     // Decision Making based on Intent...
@@ -67,12 +73,13 @@ export const generateContent = async (req: Request, res: Response) => {
           parts: [{ text: msg.content }],
         }));
 
-        const chat = model.startChat({
+        const chat = chatModel.startChat({
           history: formattedHistory,
         });
 
         const result = await chat.sendMessage(prompt);
         const text = result.response.text();
+        console.log(text)
         return res.status(200).json({ response: text });
 
       case 'UNRELATED':
