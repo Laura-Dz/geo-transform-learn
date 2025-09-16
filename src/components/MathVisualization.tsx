@@ -1,9 +1,11 @@
 
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { FunctionParser, FunctionInfo } from '@/lib/functionParser';
+import { Button } from '@/components/ui/button';
+import { Maximize, Minimize } from 'lucide-react';
 
 interface MathVisualizationProps {
   functionExpression: string;
@@ -233,6 +235,7 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
   transformations
 }) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([15, 15, 15]);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   
   const functionInfo = useMemo(() => {
     return FunctionParser.parse(functionExpression);
@@ -240,11 +243,38 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
   
   const visualizationMode = FunctionParser.getVisualizationMode(functionInfo);
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFullScreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
   return (
-    <div className="h-96 w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden">
+    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden relative ${
+      isFullScreen ? 'fixed inset-0 z-50 bg-black/80' : 'h-96 w-full'
+    }`}>
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          onClick={() => setIsFullScreen(f => !f)}
+          aria-label={isFullScreen ? 'Exit full screen' : 'Full screen'}
+          variant="outline"
+          size="sm"
+          className="bg-black/50 border-white/20 text-white hover:bg-black/70"
+        >
+          {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
+      </div>
       <Canvas
         camera={{ position: cameraPosition, fov: 60 }}
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}
+        className={isFullScreen ? 'w-full h-full' : ''}
       >
         <ambientLight intensity={0.6} />
         <pointLight position={[10, 10, 10]} intensity={1} />

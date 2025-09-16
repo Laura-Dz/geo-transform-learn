@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lightbulb, ArrowRight, Sparkles } from 'lucide-react';
+import { Loader2, Lightbulb, ArrowRight, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AIMessage } from '@/types/ai';
 
@@ -41,6 +41,9 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
   const [response, setResponse] = useState<AIResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [showGuidance, setShowGuidance] = useState(false);
+  const [isWide, setIsWide] = useState(false);
 
   const fetchExplanation = useCallback(async () => {
     if (!currentFunction?.trim()) return;
@@ -95,16 +98,26 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
   }, [fetchExplanation]);
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-cyan-900/20 border-white/20 backdrop-blur-sm">
-      <div className="flex items-center space-x-2 mb-6">
-        <div className="p-2 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-lg">
-          <Sparkles className="h-5 w-5 text-yellow-400" />
+    <div className={isWide ? 'w-full max-w-screen-lg mx-auto' : 'w-full max-w-md mx-auto'}>
+      <Card className="p-6 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-cyan-900/20 border-white/20 backdrop-blur-sm">
+        <div className="flex items-center space-x-2 mb-6">
+          <div className="p-2 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-lg">
+            <Sparkles className="h-5 w-5 text-yellow-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-white">AI Math Tutor</h3>
+            <p className="text-sm text-gray-400">Understanding your mathematical journey</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-white">AI Math Tutor</h3>
-          <p className="text-sm text-gray-400">Understanding your mathematical journey</p>
-        </div>
-      </div>
+
+        <Button
+          variant="outline"
+          onClick={() => setIsWide(w => !w)}
+          aria-expanded={isWide}
+          className="mb-4 border-white/20 text-white hover:bg-white/10"
+        >
+          {isWide ? 'Shrink Panel' : 'Expand Panel'}
+        </Button>
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-12">
@@ -120,33 +133,75 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
         </div>
       )}
 
-      {!loading && !error && response && (
-        <div className="space-y-6">
-          {/* Main Explanation Card */}
-          <div className="bg-black/20 rounded-lg p-5 border border-blue-500/30">
-            <h4 className="text-white font-semibold mb-3 flex items-center">
-              <Lightbulb className="h-4 w-4 text-yellow-400 mr-2" />
-              Function Analysis
-            </h4>
-            <div className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {response.explanation}
-              </ReactMarkdown>
+        {!loading && !error && response && (
+          <div className="space-y-6">
+            {/* Main Explanation Card */}
+            <div className="bg-black/20 rounded-lg p-4 border border-blue-500/30">
+              <h4 className="text-white font-semibold mb-3 flex items-center">
+                <Lightbulb className="h-4 w-4 text-yellow-400 mr-2" />
+                Function Analysis
+              </h4>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowExplanation(prev => !prev)}
+                aria-expanded={showExplanation}
+                className="text-white hover:bg-white/10"
+              >
+                {showExplanation ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    View More
+                  </>
+                )}
+              </Button>
+              {showExplanation && (
+                <div className="mt-3 max-h-40 overflow-y-auto prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {response.explanation}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Guidance Card */}
-          <div className="bg-black/20 rounded-lg p-5 border border-green-500/30">
-            <h4 className="text-white font-semibold mb-3 flex items-center">
-              <ArrowRight className="h-4 w-4 text-green-400 mr-2" />
-              Next Steps & Guidance
-            </h4>
-            <div className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {response.guidance}
-              </ReactMarkdown>
+            {/* Guidance Card */}
+            <div className="bg-black/20 rounded-lg p-4 border border-green-500/30">
+              <h4 className="text-white font-semibold mb-3 flex items-center">
+                <ArrowRight className="h-4 w-4 text-green-400 mr-2" />
+                Next Steps & Guidance
+              </h4>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowGuidance(prev => !prev)}
+                aria-expanded={showGuidance}
+                className="text-white hover:bg-white/10"
+              >
+                {showGuidance ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    View More
+                  </>
+                )}
+              </Button>
+              {showGuidance && (
+                <div className="mt-3 max-h-40 overflow-y-auto prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {response.guidance}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
-          </div>
 
           {/* Related Concept (Optional) */}
           {response.relatedConcept && (
@@ -160,7 +215,8 @@ const ConceptExplanation: React.FC<ConceptExplanationProps> = ({
           )}
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   );
 };
 
