@@ -257,8 +257,10 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
   }, []);
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden relative ${
-      isFullScreen ? 'fixed inset-0 z-50 bg-black/80' : 'h-96 w-full'
+    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden relative transition-all duration-300 ${
+      isFullScreen 
+        ? 'expanded fixed inset-0 z-50 bg-black/80 w-full h-full flex' 
+        : 'collapsed h-96 w-full'
     }`}>
       <div className="absolute top-4 right-4 z-10">
         <Button
@@ -274,7 +276,11 @@ const MathVisualization: React.FC<MathVisualizationProps> = ({
       <Canvas
         camera={{ position: cameraPosition, fov: 60 }}
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}
-        className={isFullScreen ? 'w-full h-full' : ''}
+        className={`transition-all duration-300 ${
+          isFullScreen 
+            ? 'expanded w-full h-full' 
+            : 'collapsed w-full h-full'
+        }`}
       >
         <ambientLight intensity={0.6} />
         <pointLight position={[10, 10, 10]} intensity={1} />
