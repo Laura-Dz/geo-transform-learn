@@ -8,6 +8,12 @@ export default {
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
 	],
+	safelist: [
+		"expanded",
+		"collapsed", 
+		"nav-open",
+		"nav-closed"
+	],
 	prefix: "",
 	theme: {
 		container: {
