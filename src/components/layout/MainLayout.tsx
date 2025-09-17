@@ -17,14 +17,9 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-        <div
-          className={`transition-all duration-300 overflow-hidden ${
-            showNav ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0'
-          }`}
-          style={{ position: 'sticky', top: 0 }}
-        >
+        <nav className={`transition-all duration-300 ${showNav ? 'expanded' : 'collapsed'}`}>
           <AppSidebar />
-        </div>
+        </nav>
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
@@ -65,7 +60,7 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
+          <main className={`flex-1 p-6 overflow-auto ${showNav ? 'nav-open' : 'nav-closed'}`}>
             <Outlet />
           </main>
         </div>
